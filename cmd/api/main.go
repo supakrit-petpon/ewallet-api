@@ -22,7 +22,12 @@ func main(){
 	authService := usecases.NewAuthService(userRepo, tokenProvider)
 	authHandler := http.NewAuthHandler(authService)
 
-	http.MapRoutes(application.App, userHandler, authHandler)
+	//3. Wallet
+	walletRepo := repository.NewGormWalletRepository(application.DB)
+	walletService := usecases.NewWalletService(walletRepo)
+	walletHandler := http.NewWalletHandler(walletService)
+
+	http.MapRoutes(application.App, application.Config.SecretKey, userHandler, authHandler, walletHandler)
 
 	err := application.Start()
 	if err != nil {

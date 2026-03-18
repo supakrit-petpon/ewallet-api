@@ -101,7 +101,7 @@ func TestTransaction_CreateUser_CreateWallet(t *testing.T) {
     })
 }
 
-func TestFind(t *testing.T) {
+func TestGormUserRepository_Find(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)

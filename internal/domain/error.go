@@ -10,6 +10,9 @@ import (
 var (
     ErrInvalidCredentials = errors.New("Invalid email or password")
     ErrInternalServerError = errors.New("Internal server error")
+    ErrWalletRecordNotFound = errors.New("Invalid wallet id")
+    ErrUserRecordNotFound = errors.New("Invalid user id")
+    ErrParamsFormat = errors.New("Invalid params format")
 )
 
 func GetErrorMessage(fe validator.FieldError) string {

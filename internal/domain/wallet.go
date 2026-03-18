@@ -14,4 +14,5 @@ type Wallet struct{
 
 type WalletRepository interface{
 	CreateWallet(wallet Wallet) error
+	GetBalance(userId uint) (int64, error)
 }

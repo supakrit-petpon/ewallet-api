@@ -76,3 +76,53 @@ func TestGormWalletRepository_CreateWallet(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }
+
+func TestGormWalletRepository_GetBalance(t *testing.T){
+	db, mock, err := sqlmock.New()
+	if err != nil {
+	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+	if err != nil{
+		t.Fatalf("an error '%s' was not expected when opening a gorm database connection", err)
+	}
+	
+	repo := NewGormWalletRepository(gormDB)
+	t.Run("success", func(t *testing.T) {
+		rows := sqlmock.NewRows([]string{"balance"}).AddRow(100000)
+		expectedSQL := `^SELECT "balance" FROM "wallets" WHERE user_id = \$1.*`
+		mock.ExpectQuery(expectedSQL).
+			WithArgs(1).
+			WillReturnRows(rows)
+
+		balance, err := repo.GetBalance(1)
+
+		assert.NoError(t, err)
+		assert.Equal(t, int64(100000), balance)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("Invalid user id", func(t *testing.T) {
+		expectedSQL := `^SELECT "balance" FROM "wallets" WHERE user_id = \$1.*`
+		rows := sqlmock.NewRows([]string{"balance"})
+		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
+		
+		balance, err := repo.GetBalance(999)
+
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), balance)
+		assert.EqualError(t, err, "Invalid user id")
+	})
+	t.Run("Internal DB error", func(t *testing.T) {
+		expectedSQL := `^SELECT "balance" FROM "wallets" WHERE user_id = \$1.*`
+		mock.ExpectQuery(expectedSQL).WillReturnError(domain.ErrInternalServerError)
+		
+		balance, err := repo.GetBalance(999)
+
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), balance)
+		assert.EqualError(t, err, "Internal server error")
+	})
+}

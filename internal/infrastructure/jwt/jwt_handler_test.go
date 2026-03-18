@@ -9,7 +9,6 @@ import (
 
 func TestJWTHandler_GenerateToken(t *testing.T) {
 	
-
 	t.Run("should generate valid token string", func(t *testing.T) {
 		secret := "test-secret-key"
 		handler := &JWTHandler{SecretKey: secret}
@@ -29,7 +28,6 @@ func TestJWTHandler_GenerateToken(t *testing.T) {
         assert.True(t, parsedToken.Valid)
 
         claims := parsedToken.Claims.(jwt.MapClaims)
-        // หมายเหตุ: jwt-go จะมองตัวเลขเป็น float64 เมื่อ parse กลับมา
         assert.Equal(t, float64(userId), claims["user_id"])
     })
 	t.Run("secret key is missing", func(t *testing.T) {
@@ -43,7 +41,6 @@ func TestJWTHandler_GenerateToken(t *testing.T) {
         assert.Equal(t, "", tokenString)
     	assert.Contains(t, err.Error(), "secret key is missing")
     })
-
 }
 
 func TestNewTokenProvider(t *testing.T) {

@@ -65,7 +65,9 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 			Name: "jwt",
 			Value: token,
 			Expires: time.Now().Add(time.Hour * 3),
-			HTTPOnly: true,
+			HTTPOnly: true,  // ป้องกัน XSS
+			Secure:   false, // พัฒนาบน localhost ให้เป็น false ก่อน ถ้าขึ้น Production ต้อง true
+			SameSite: "Lax",  // ป้องกัน CSRF
 		})
 	
 	return c.JSON(fiber.Map{

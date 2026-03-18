@@ -44,7 +44,7 @@ func (r *GormUserRepository) Find(email string) (*domain.User, error){
 	result := r.db.Where(`email = ?`, email).First(selectedUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Invalid email or password")
+			return nil, domain.ErrInvalidCredentials
 		}
 	}
 	
