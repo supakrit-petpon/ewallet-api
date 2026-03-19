@@ -37,7 +37,7 @@ func TestGormUserRepository_CreateUser(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 		mock.ExpectCommit()
 
-		_, err := repo.CreateUser(domain.User{Email: email, Password: password})
+		_, err := repo.Create(domain.User{Email: email, Password: password})
 		assert.NoError(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -54,7 +54,7 @@ func TestGormUserRepository_CreateUser(t *testing.T) {
         	WillReturnError(gorm.ErrDuplicatedKey)
 		mock.ExpectRollback()
 
-		_, err := repo.CreateUser(domain.User{Email: email, Password: password})
+		_, err := repo.Create(domain.User{Email: email, Password: password})
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, gorm.ErrDuplicatedKey)
 

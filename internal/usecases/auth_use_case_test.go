@@ -20,7 +20,7 @@ func (m *mockTokenProvider) GenerateToken(userId uint) (string, error){
 func TestLogin(t *testing.T) {
 	t.Run("find user success", func(t *testing.T) {
 	userRepo := &mockUserRepo{
-		findUserFunc: func(email string) (*domain.User, error) {
+		findFunc: func(email string) (*domain.User, error) {
 			return &domain.User{ID: 1, Email: "piano@example.com", Password: "$2a$10$aS5pRjQ6Fyx9lzdRvy8VZ.pj1Lnp23w48QCROtMPZxTx6.UUMfyc2"}, nil
 		},
 	}
@@ -37,7 +37,7 @@ func TestLogin(t *testing.T) {
 	t.Run("Invalid email", func(t *testing.T) {
 		called := false
 		userRepo := &mockUserRepo{
-		findUserFunc: func(email string) (*domain.User, error) {
+		findFunc: func(email string) (*domain.User, error) {
 			return nil, domain.ErrInvalidCredentials
 		},
 		}
@@ -57,9 +57,9 @@ func TestLogin(t *testing.T) {
 	t.Run("Invalid password", func(t *testing.T) {
 		called := false
 		userRepo := &mockUserRepo{
-		findUserFunc: func(email string) (*domain.User, error) {
-			return nil, domain.ErrInvalidCredentials
-			},
+			findFunc: func(email string) (*domain.User, error) {
+				return nil, domain.ErrInvalidCredentials
+				},
 		}
 		tokenProvider := &mockTokenProvider{
 			generateTokenFunc: func(userId uint) (string, error) {
@@ -76,7 +76,7 @@ func TestLogin(t *testing.T) {
 	})
 	t.Run("Generate token error", func(t *testing.T) {
 		userRepo := &mockUserRepo{
-		findUserFunc: func(email string) (*domain.User, error) {
+		findFunc: func(email string) (*domain.User, error) {
 			return &domain.User{ID: 1, Email: "piano@example.com", Password: "$2a$10$aS5pRjQ6Fyx9lzdRvy8VZ.pj1Lnp23w48QCROtMPZxTx6.UUMfyc2"}, nil
 		},
 		}

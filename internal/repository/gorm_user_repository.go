@@ -17,7 +17,7 @@ func NewGormUserRepository(db *gorm.DB) domain.UserRepository{
 	return &GormUserRepository{db: db}
 }
 
-func (r *GormUserRepository) CreateUser(user domain.User) (uint, error) {
+func (r *GormUserRepository) Create(user domain.User) (uint, error) {
 	
 	result := r.db.Create(&user)
 	if result.Error != nil {

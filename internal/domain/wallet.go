@@ -13,6 +13,6 @@ type Wallet struct{
 }
 
 type WalletRepository interface{
-	CreateWallet(wallet Wallet) error
-	GetBalance(userId uint) (int64, error)
+	Create(wallet Wallet) error
+	Get(userId uint) (int64, error)
 }

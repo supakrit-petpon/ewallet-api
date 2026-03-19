@@ -8,23 +8,23 @@ import (
 )
 
 type mockWalletRepo struct {
-	createWalletFunc func(wallet domain.Wallet) error
-	getBalanceFunc func(id uint) (int64, error)
+	createFunc func(wallet domain.Wallet) error
+	getFunc func(id uint) (int64, error)
 }
 
-func (m *mockWalletRepo) GetBalance(id uint) (int64, error) {
-	return m.getBalanceFunc(id)
+func (m *mockWalletRepo) Get(id uint) (int64, error) {
+	return m.getFunc(id)
 }
 
-func (m *mockWalletRepo) CreateWallet(wallet domain.Wallet) error {
-	return m.createWalletFunc(wallet)
+func (m *mockWalletRepo) Create(wallet domain.Wallet) error {
+	return m.createFunc(wallet)
 }
 
 
 func TestGetBalance(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		repo := &mockWalletRepo{
-			getBalanceFunc: func(id uint) (int64, error) {
+			getFunc: func(id uint) (int64, error) {
 				return 100000, nil
 			},
 		}
@@ -38,7 +38,7 @@ func TestGetBalance(t *testing.T) {
 
 	t.Run("invalid user id", func(t *testing.T) {
 		repo := &mockWalletRepo{
-			getBalanceFunc: func(id uint) (int64, error) {
+			getFunc: func(id uint) (int64, error) {
 				return 0, domain.ErrUserRecordNotFound
 			},
 		}
@@ -51,7 +51,7 @@ func TestGetBalance(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		repo := &mockWalletRepo{
-			getBalanceFunc: func(id uint) (int64, error) {
+			getFunc: func(id uint) (int64, error) {
 				return 0, domain.ErrInternalServerError
 			},
 		}

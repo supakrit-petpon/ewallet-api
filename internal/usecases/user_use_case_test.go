@@ -9,13 +9,13 @@ import (
 )
 
 type mockUserRepo struct{
-	createUserFunc func(user domain.User) (uint, error)
+	createFunc func(user domain.User) (uint, error)
 	tracsaction_CreateUser_CreateWallet func(func(txUser domain.UserRepository, txWallet domain.WalletRepository) error) error
-	findUserFunc func(email string) (*domain.User, error)
+	findFunc func(email string) (*domain.User, error)
 }
 
-func (m *mockUserRepo) CreateUser(user domain.User) (uint, error){
-	return m.createUserFunc(user)
+func (m *mockUserRepo) Create(user domain.User) (uint, error){
+	return m.createFunc(user)
 }
 
 func (m *mockUserRepo) Transaction_CreateUser_CreateWallet(fn func(domain.UserRepository, domain.WalletRepository) error) error {
@@ -23,7 +23,7 @@ func (m *mockUserRepo) Transaction_CreateUser_CreateWallet(fn func(domain.UserRe
 }
 
 func (m *mockUserRepo) Find(email string) (*domain.User, error) {
-    return m.findUserFunc(email)
+    return m.findFunc(email)
 }
 
 
@@ -37,10 +37,10 @@ func TestRegister(t *testing.T){
 		userRepo.tracsaction_CreateUser_CreateWallet = func(fn func(txUser domain.UserRepository, txWallet domain.WalletRepository) error) error {
 			return fn(userRepo, walletRepo)
 		}
-		userRepo.createUserFunc = func(user domain.User) (uint, error) {
+		userRepo.createFunc = func(user domain.User) (uint, error) {
 			return 1, nil
 		}
-		walletRepo.createWalletFunc = func(w domain.Wallet) error { return nil }
+		walletRepo.createFunc = func(w domain.Wallet) error { return nil }
 
 		err := service.Register(domain.User{Email: "piano@example.com", Password: "password"})
 		assert.NoError(t, err)
@@ -56,11 +56,11 @@ func TestRegister(t *testing.T){
 			called = true
 			return fn(userRepo, walletRepo)
 		}
-		userRepo.createUserFunc = func(user domain.User) (uint, error) {
+		userRepo.createFunc = func(user domain.User) (uint, error) {
 			called = true
 			return 0, nil
 		}
-		walletRepo.createWalletFunc = func(w domain.Wallet) error { return nil }
+		walletRepo.createFunc = func(w domain.Wallet) error { return nil }
 		service := NewUserService(userRepo)
 
 		veryLongPassword := string(make([]byte, 73))
@@ -79,10 +79,10 @@ func TestRegister(t *testing.T){
 		userRepo.tracsaction_CreateUser_CreateWallet = func(fn func(txUser domain.UserRepository, txWallet domain.WalletRepository) error) error {
 			return fn(userRepo, walletRepo)
 		}
-		userRepo.createUserFunc = func(user domain.User) (uint, error) {
+		userRepo.createFunc = func(user domain.User) (uint, error) {
 			return 0, errors.New("email is already exists")
 		}
-		walletRepo.createWalletFunc = func(w domain.Wallet) error { return nil }
+		walletRepo.createFunc = func(w domain.Wallet) error { return nil }
 		service := NewUserService(userRepo)
 
 		err := service.Register(domain.User{Email: "piano@example.com", Password: "password"})
@@ -97,10 +97,10 @@ func TestRegister(t *testing.T){
 		userRepo.tracsaction_CreateUser_CreateWallet = func(fn func(txUser domain.UserRepository, txWallet domain.WalletRepository) error) error {
 			return fn(userRepo, walletRepo)
 		}
-		userRepo.createUserFunc = func(user domain.User) (uint, error) {
+		userRepo.createFunc = func(user domain.User) (uint, error) {
 			return 100, nil
 		}
-		walletRepo.createWalletFunc = func(wallet domain.Wallet) error {return errors.New("user not found")}
+		walletRepo.createFunc = func(wallet domain.Wallet) error {return errors.New("user not found")}
 		service := NewUserService(userRepo)
 		
 		err := service.Register(domain.User{Email: "piano@example.com", Password: "password"})

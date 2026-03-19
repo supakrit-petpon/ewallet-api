@@ -18,7 +18,7 @@ func NewWalletService(repo domain.WalletRepository) WalletUseCase{
 }
 
 func (s *WalletService) Balance(userId uint) (string, error){
-	balance, err := s.repo.GetBalance(userId)
+	balance, err := s.repo.Get(userId)
 	if err != nil {
 		return "", err
 	}

@@ -30,7 +30,7 @@ func (s *UserService) Register(user domain.User) error {
 	//2. use transaction to create User & Wallet
 	return s.repo.Transaction_CreateUser_CreateWallet(func(txUser domain.UserRepository, txWallet domain.WalletRepository) error {
 		
-		id, err := txUser.CreateUser(user)
+		id, err := txUser.Create(user)
 		if err != nil{
 			return err
 		}
@@ -41,7 +41,7 @@ func (s *UserService) Register(user domain.User) error {
             Currency: "THB",
         }
 
-		if err := txWallet.CreateWallet(*wallet); err != nil{
+		if err := txWallet.Create(*wallet); err != nil{
 			return err
 		}
 

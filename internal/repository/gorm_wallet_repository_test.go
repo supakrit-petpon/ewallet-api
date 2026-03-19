@@ -38,7 +38,7 @@ func TestGormWalletRepository_CreateWallet(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 		mock.ExpectCommit()
 
-		err := repo.CreateWallet(domain.Wallet{UserID: uint(userId), Balance: int64(balance), Currency: currency})
+		err := repo.Create(domain.Wallet{UserID: uint(userId), Balance: int64(balance), Currency: currency})
 		assert.NoError(t, err)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
@@ -53,7 +53,7 @@ func TestGormWalletRepository_CreateWallet(t *testing.T) {
 			WillReturnError(gorm.ErrDuplicatedKey)
 		mock.ExpectRollback()
 
-		err := repo.CreateWallet(domain.Wallet{UserID: uint(userId), Balance: int64(0), Currency: "THB"})
+		err := repo.Create(domain.Wallet{UserID: uint(userId), Balance: int64(0), Currency: "THB"})
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, gorm.ErrDuplicatedKey)
 
@@ -69,7 +69,7 @@ func TestGormWalletRepository_CreateWallet(t *testing.T) {
 			WillReturnError(gorm.ErrForeignKeyViolated)
 		mock.ExpectRollback()
 
-		err := repo.CreateWallet(domain.Wallet{UserID: uint(userId), Balance: 0, Currency: "THB"})
+		err := repo.Create(domain.Wallet{UserID: uint(userId), Balance: 0, Currency: "THB"})
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, gorm.ErrForeignKeyViolated)
 
@@ -97,7 +97,7 @@ func TestGormWalletRepository_GetBalance(t *testing.T){
 			WithArgs(1).
 			WillReturnRows(rows)
 
-		balance, err := repo.GetBalance(1)
+		balance, err := repo.Get(1)
 
 		assert.NoError(t, err)
 		assert.Equal(t, int64(100000), balance)
@@ -109,7 +109,7 @@ func TestGormWalletRepository_GetBalance(t *testing.T){
 		rows := sqlmock.NewRows([]string{"balance"})
 		mock.ExpectQuery(expectedSQL).WillReturnRows(rows)
 		
-		balance, err := repo.GetBalance(999)
+		balance, err := repo.Get(999)
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), balance)
@@ -119,7 +119,7 @@ func TestGormWalletRepository_GetBalance(t *testing.T){
 		expectedSQL := `^SELECT "balance" FROM "wallets" WHERE user_id = \$1.*`
 		mock.ExpectQuery(expectedSQL).WillReturnError(domain.ErrInternalServerError)
 		
-		balance, err := repo.GetBalance(999)
+		balance, err := repo.Get(999)
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), balance)

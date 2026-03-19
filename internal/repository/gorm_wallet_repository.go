@@ -17,7 +17,7 @@ func NewGormWalletRepository(db *gorm.DB) domain.WalletRepository{
 	return &GormWalletRepository{db: db}
 }
 
-func (r *GormWalletRepository) CreateWallet(wallet domain.Wallet) error{
+func (r *GormWalletRepository) Create(wallet domain.Wallet) error{
 	result := r.db.Create(&wallet)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) || strings.Contains(result.Error.Error(), "duplicate") {
@@ -31,7 +31,7 @@ func (r *GormWalletRepository) CreateWallet(wallet domain.Wallet) error{
 	return nil
 }
 
-func (r *GormWalletRepository) GetBalance(userId uint) (int64, error) {
+func (r *GormWalletRepository) Get(userId uint) (int64, error) {
 	wallet := new(domain.Wallet)
 
 	result := r.db.Where("user_id = ?", userId).Select("balance").Find(&wallet)
