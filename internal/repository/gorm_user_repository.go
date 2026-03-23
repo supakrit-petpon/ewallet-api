@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"piano/e-wallet/internal/domain"
 	"strings"
 
@@ -22,14 +21,16 @@ func (r *GormUserRepository) Create(user domain.User) (uint, error) {
 	result := r.db.Create(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) || strings.Contains(result.Error.Error(), "duplicate") {
-            return 0, fmt.Errorf("email is already exists: %w", gorm.ErrDuplicatedKey)
+            return 0, domain.ErrConflictEmail
         }
+
+		return 0, domain.ErrInternalServerError
 	}
 
 	return user.ID, nil
 }
 
-func (r *GormUserRepository) Transaction_CreateUser_CreateWallet(fn func(domain.UserRepository, domain.WalletRepository) error) error {
+func (r *GormUserRepository) ExecuteTransaction(fn func(domain.UserRepository, domain.WalletRepository) error) error {
     return r.db.Transaction(func(tx *gorm.DB) error {
         userRepoTx := NewGormUserRepository(tx)
         walletRepoTx := NewGormWalletRepository(tx)
@@ -44,9 +45,12 @@ func (r *GormUserRepository) Find(email string) (*domain.User, error){
 	result := r.db.Where(`email = ?`, email).First(selectedUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrInvalidCredentials
+			return nil, domain.ErrNotFoundUser
 		}
+
+		return nil, domain.ErrInternalServerError
 	}
 	
 	return selectedUser, nil
 }
+

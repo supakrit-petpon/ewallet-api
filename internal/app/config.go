@@ -13,7 +13,7 @@ type Config struct {
 }
 
 func LoadConfig() *Config{
-	godotenv.Load()
+	godotenv.Load("../../.env")
 	return &Config{
 		Port:  os.Getenv("PORT"),	
 		DBDSN: os.Getenv("DB_DSN"),

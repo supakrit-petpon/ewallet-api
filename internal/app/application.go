@@ -2,33 +2,36 @@ package app
 
 import (
 	"log"
+	"piano/e-wallet/pkg/logger"
 
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 )
 
-
 type Application struct {
 	Config *Config
 	DB     *gorm.DB
 	App *fiber.App
+	Logger logger.Logger
 }
 
 func NewApplication() *Application {
 	cfg := LoadConfig()
 	db := DBSetup(*cfg)
+	logger := logger.NewZapLogger()
 	
 	router := fiber.New(fiber.Config{
 		AppName: "E-wallet api",
 		StrictRouting: false,
 	})
 
-	log.Println("Internal application setup complete")
+	logger.Info("Internal application setup complete")
 
 	return &Application{
 		Config: cfg,
 		DB:     db,
 		App: router,
+		Logger: logger,
 	}
 }
 

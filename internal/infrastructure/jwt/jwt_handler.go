@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"piano/e-wallet/internal/domain"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -31,7 +32,7 @@ func (h *JWTHandler) GenerateToken(userId uint) (string, error){
 
 	t, err := token.SignedString([]byte(h.SecretKey))
 	if err != nil{
-		return "", err
+		return "", domain.ErrInternalServerError
 	}
 
 	return t, nil

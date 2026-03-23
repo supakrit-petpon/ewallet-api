@@ -10,6 +10,8 @@ type User struct{
 
 type UserRepository interface{
 	Create(user User) (uint, error)
-	Transaction_CreateUser_CreateWallet(fn func(txUser UserRepository, txWallet WalletRepository) error) error
 	Find(email string) (*User, error)
+
+	//DB transaction to create user & create wallet
+	ExecuteTransaction(fn func(txUser UserRepository, txWallet WalletRepository) error) error
 }

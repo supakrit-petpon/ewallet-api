@@ -3,7 +3,6 @@ package middleware
 import (
 	"io"
 	"net/http/httptest"
-	"piano/e-wallet/internal/app"
 	"testing"
 	"time"
 
@@ -18,14 +17,9 @@ import (
 func TestAuthRequired(t *testing.T) {
 	
 	secret := "test-secret-key"
-	cfg := &app.Application{
-		Config: &app.Config{
-			SecretKey: secret,
-		},
-	}
-
+	
 	app := fiber.New()
-	app.Use(AuthRequired(cfg))
+	app.Use(AuthRequired(secret))
 
 	app.Get("/balance", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{

@@ -28,7 +28,7 @@ func DBSetup(cfg Config) *gorm.DB  {
 		log.Fatal("Failed to connect to database:", err)
 	}
 	// 4. Migrate DB
-	db.AutoMigrate(&domain.User{}, &domain.Wallet{})
+	db.AutoMigrate(&domain.User{}, &domain.Wallet{}, &domain.Transaction{})
 
 	return db
 }

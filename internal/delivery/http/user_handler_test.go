@@ -2,10 +2,10 @@ package http
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"net/http/httptest"
 	"piano/e-wallet/internal/domain"
+	"piano/e-wallet/pkg/logger"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -23,16 +23,17 @@ func (m * MockUserService) Register(user domain.User) error {
 }
 
 func TestRegisterHandler(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, testLog)
 
 	app := fiber.New()
-	app.Post("/users", handler.Register)
+	app.Post("/register", handler.Register)
 
 	t.Run("success user creation", func(t *testing.T) {
 		mockService.On("Register", mock.AnythingOfType("domain.User")).Return(nil)
 
-		req := httptest.NewRequest("POST", "/users", bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"}`))
+		req := httptest.NewRequest("POST", "/register", bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"}`))
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := app.Test(req)
 
@@ -42,7 +43,7 @@ func TestRegisterHandler(t *testing.T) {
 	})
 
 	t.Run("invalid request", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/users",  bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"`))
+		req := httptest.NewRequest("POST", "/register",  bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"`))
 
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := app.Test(req)
@@ -80,7 +81,7 @@ func TestRegisterHandler(t *testing.T) {
 		}
 
 		for _, tt := range tests{
-			req := httptest.NewRequest("POST", "/users", bytes.NewBufferString(tt.requestBody))
+			req := httptest.NewRequest("POST", "/register", bytes.NewBufferString(tt.requestBody))
 
 			req.Header.Set("Content-Type", "application/json")
 			resp, _ := app.Test(req)
@@ -94,9 +95,9 @@ func TestRegisterHandler(t *testing.T) {
 
 	t.Run("email is already exist", func(t *testing.T) {
 		mockService.ExpectedCalls = nil
-		mockService.On("Register", mock.Anything).Return(errors.New("email is already exists: duplicated key not allowed"))
+		mockService.On("Register", mock.Anything).Return(domain.ErrConflictEmail)
 
-		req := httptest.NewRequest("POST", "/users",  bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"}`))
+		req := httptest.NewRequest("POST", "/register",  bytes.NewBufferString(`{"email": "piano@example.com", "password": "password"}`))
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := app.Test(req)
 

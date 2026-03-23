@@ -1,9 +1,10 @@
 package http
 
 import (
+	"errors"
 	"piano/e-wallet/internal/domain"
 	"piano/e-wallet/internal/usecases"
-	"strings"
+	"piano/e-wallet/pkg/logger"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -12,10 +13,11 @@ import (
 
 type AuthHandler struct{
 	authUserCase usecases.AuthUseCase
+	logger logger.Logger
 }
 
-func NewAuthHandler(authUserCase usecases.AuthUseCase) *AuthHandler{
-	return &AuthHandler{authUserCase: authUserCase}
+func NewAuthHandler(authUserCase usecases.AuthUseCase, logger logger.Logger) *AuthHandler{
+	return &AuthHandler{authUserCase: authUserCase, logger: logger}
 }
 
 func (h *AuthHandler) Login(c fiber.Ctx) error {
@@ -25,8 +27,8 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
     }
 
 	if err := c.Bind().Body(&user); err != nil{
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request",
+		return c.Status(400).JSON(fiber.Map{
+			"error": "invalid request body",
 		})
 	}
 
@@ -47,15 +49,15 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	//Login
 	token, err := h.authUserCase.Login(user.Email, user.Password)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid email or password"){
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": err.Error(),
+		switch{
+		case errors.Is(err, domain.ErrAuthUnauthorized):
+			return c.Status(401).JSON(fiber.Map{
+				"message": err.Error(),
 			})
-		}
-
-		if strings.Contains(err.Error(), "Internal server error"){
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err.Error(),
+		default:
+			h.logger.Error("unexpected error in login handler", err, "path", c.Path())
+			return c.Status(500).JSON(fiber.Map{
+				"message": "something went wrong",
 			})
 		}
     }
@@ -70,7 +72,7 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 			SameSite: "Lax",  // ป้องกัน CSRF
 		})
 	
-	return c.JSON(fiber.Map{
+	return c.Status(200).JSON(fiber.Map{
 			"message": "Login successful!",
 		})
 }

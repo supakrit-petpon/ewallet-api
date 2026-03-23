@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"piano/e-wallet/internal/domain"
+	"piano/e-wallet/pkg/logger"
 	"strings"
 	"testing"
 
@@ -24,8 +25,9 @@ func (m * MockAuthService) Login(email string, password string) (string, error) 
 }
 
 func TestLoginHandler(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
 	mockService := new(MockAuthService)
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(mockService, testLog)
 
 	app := fiber.New()
 	app.Post("/login", handler.Login)
@@ -115,7 +117,7 @@ func TestLoginHandler(t *testing.T) {
 
 	t.Run("invalid email", func(t *testing.T) {
 		mockService.ExpectedCalls = nil
-		mockService.On("Login", "piano@example.com", "valid_password").Return("", domain.ErrInvalidCredentials)
+		mockService.On("Login", "piano@example.com", "valid_password").Return("", domain.ErrAuthUnauthorized)
 
 		reqBody := `{"email":"piano@example.com", "password":"valid_password"}`
 		req := httptest.NewRequest("POST", "/login", strings.NewReader(reqBody))
@@ -129,7 +131,7 @@ func TestLoginHandler(t *testing.T) {
 
 	t.Run("invalid password", func(t *testing.T) {
 		mockService.ExpectedCalls = nil
-		mockService.On("Login", "piano@example.com", "wrong_password").Return("", domain.ErrInvalidCredentials)
+		mockService.On("Login", "piano@example.com", "wrong_password").Return("", domain.ErrAuthUnauthorized)
 
 		reqBody := `{"email":"piano@example.com", "password":"wrong_password"}`
 		req := httptest.NewRequest("POST", "/login", strings.NewReader(reqBody))

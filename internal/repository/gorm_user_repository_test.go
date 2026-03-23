@@ -38,8 +38,8 @@ func TestGormUserRepository_CreateUser(t *testing.T) {
 		mock.ExpectCommit()
 
 		_, err := repo.Create(domain.User{Email: email, Password: password})
-		assert.NoError(t, err)
 
+		assert.NoError(t, err)
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 
@@ -56,13 +56,13 @@ func TestGormUserRepository_CreateUser(t *testing.T) {
 
 		_, err := repo.Create(domain.User{Email: email, Password: password})
 		assert.Error(t, err)
-		assert.ErrorIs(t, err, gorm.ErrDuplicatedKey)
+		assert.ErrorIs(t, err, domain.ErrConflictEmail)
 
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }
 
-func TestTransaction_CreateUser_CreateWallet(t *testing.T) {
+func TestGormUserRepository_ExecuteTransaction(t *testing.T) {
     db, mock, err := sqlmock.New()
 	if err != nil {
 	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -79,7 +79,7 @@ func TestTransaction_CreateUser_CreateWallet(t *testing.T) {
         
         mock.ExpectBegin()
         mock.ExpectCommit()
-        err := repo.Transaction_CreateUser_CreateWallet(func(u domain.UserRepository, w domain.WalletRepository) error {
+        err := repo.ExecuteTransaction(func(u domain.UserRepository, w domain.WalletRepository) error {
             return nil
         })
         assert.NoError(t, err)
@@ -91,7 +91,7 @@ func TestTransaction_CreateUser_CreateWallet(t *testing.T) {
         mock.ExpectBegin()
         mock.ExpectRollback()
 
-        err := repo.Transaction_CreateUser_CreateWallet(func(u domain.UserRepository, w domain.WalletRepository) error {
+        err := repo.ExecuteTransaction(func(u domain.UserRepository, w domain.WalletRepository) error {
             return errors.New("something went wrong") 
         })
 
