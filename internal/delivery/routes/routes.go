@@ -23,4 +23,5 @@ func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler, 
     wallet.Use(middleware.AuthRequired(secretKey))
     wallet.Get("/balance", walletHandler.Balance)
     wallet.Post("/topup", walletHandler.TopUp)
+    wallet.Post("/withdraw", walletHandler.Withdraw)
 }

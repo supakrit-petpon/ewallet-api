@@ -22,11 +22,33 @@ var (
     ErrConflictEmail          = errors.New("this email is already registered")
     ErrConflictUserWallet = errors.New("this user is already has wallet")
     ErrConflictTransactionRefId = errors.New("this transaction is already created")
+    ErrInsufficientBalance = errors.New("insufficient balance for this transaction")
 
     // Internal Server error
     ErrInternalServerError = errors.New("internal server error")
 )
+var(
+    // Authentication & Authorization
+    ERR_AUTH_UNTHORIZED    = "AUTH_UNTHORIZED"
+    
+    // Resource Not Found (ใช้คำว่า NotFound แทน RecordNotFound จะสั้นกว่า)
+    ERR_NOT_FOUND_USER          = "NOT_FOUND_USER"
+    ERR_NOT_FOUND_WALLET        = "NOT_FOUND_WALLET"
+    ERR_NOT_FOUND_TRANSACTION   = "NOT_FOUND_TRANSACTION"
+    
+    // Validation & Logic
+    ERR_INVALID_REQUEST         = "INVALID_REQUEST"
+    ERR_VALIDATION_INVALID_INPUT = "VALIDATION_INVALID_INPUT"
+    ERR_CONFLICT_EMAIL          = "CONFLICT_EMAIL"
+    ERR_CONFLICT_USER_WALLET         = "CONFLICT_USER_WALLET"
+    ERR_CONFLICT_TRANSACTION_REFID       = "CONFLICT_TRANSACTION_REFID"
+    ERR_INSUFFICIENT_BALANCE      = "INSUFFICIENT_BALANCE"
+    
+    // Internal Server error
+    ERR_INTERNAL_ERROR = "INTERNAL_ERROR"
+)
 
+//For Fields Validation
 func GetErrorMessage(fe validator.FieldError) string {
     switch fe.Tag() {
     case "required":

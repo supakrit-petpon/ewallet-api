@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"piano/e-wallet/internal/delivery/dto"
 	"piano/e-wallet/internal/domain"
 	"piano/e-wallet/internal/usecases"
 	"piano/e-wallet/pkg/logger"
@@ -27,23 +28,32 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
     }
 
 	if err := c.Bind().Body(&user); err != nil{
-		return c.Status(400).JSON(fiber.Map{
-			"error": "invalid request body",
+		return c.Status(400).JSON(&dto.Response{
+			Success: false,
+			Code: "INVALID_REQUEST",
+			Message: "invalid request",
 		})
 	}
 
-	//Validate
+	//Validation Fields
 	validate := validator.New()
 	if err := validate.Struct(user); err != nil {
-	var errMsgs []string
-	if ve, ok := err.(validator.ValidationErrors); ok{
-		for _, fe := range ve{
-			errMsgs = append(errMsgs, domain.GetErrorMessage(fe))
+		fields := map[string]string{}
+
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			for _, fe := range ve {
+				fields[fe.Field()] = domain.GetErrorMessage(fe)
+			}
 		}
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"errors" : errMsgs,
+
+		return c.Status(400).JSON(dto.Response{
+			Success: false,
+			Code:    "VALIDATION_ERROR",
+			Message: "Invalid input",
+			Error: &dto.ErrorBody{
+				Fields: fields,
+			},
 		})
-		}
 	}
 
 	//Login
@@ -51,13 +61,17 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	if err != nil {
 		switch{
 		case errors.Is(err, domain.ErrAuthUnauthorized):
-			return c.Status(401).JSON(fiber.Map{
-				"message": err.Error(),
+			return c.Status(401).JSON(&dto.Response{
+				Success: false,
+				Code: domain.ERR_AUTH_UNTHORIZED,
+				Message: "Invalid email or password",
 			})
 		default:
 			h.logger.Error("unexpected error in login handler", err, "path", c.Path())
-			return c.Status(500).JSON(fiber.Map{
-				"message": "something went wrong",
+			return c.Status(500).JSON(&dto.Response{
+				Success: false,
+				Code: domain.ERR_INTERNAL_ERROR,
+				Message: "Something went wrong",
 			})
 		}
     }
@@ -72,7 +86,9 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 			SameSite: "Lax",  // ป้องกัน CSRF
 		})
 	
-	return c.Status(200).JSON(fiber.Map{
-			"message": "Login successful!",
-		})
+	return c.Status(200).JSON(&dto.Response{
+				Success: true,
+				Code: "SUCCESS",
+				Message: "Login successful",
+			})
 }

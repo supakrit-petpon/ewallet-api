@@ -67,6 +67,23 @@ func (r *GormWalletRepository) IncrementBalance(userId uint, amount int64) (int6
 	
     return int64(wallet.Balance), nil
 }
+func (r *GormWalletRepository) DecrementBalance(userId uint, amount int64) (int64, error){
+	var wallet domain.Wallet
+    
+    result := r.db.Model(&wallet).
+        Clauses(clause.Returning{Columns: []clause.Column{{Name: "balance"}}}).
+        Where("user_id = ? AND balance >= ?", userId, amount).
+        Update("balance", gorm.Expr("balance - ?", amount))
+
+    if result.Error != nil {
+		return 0, domain.ErrInternalServerError
+	}
+	if result.RowsAffected == 0 {
+		return 0, domain.ErrInsufficientBalance
+	}
+	
+    return int64(wallet.Balance), nil
+}
 
 func (r *GormWalletRepository)ExecuteTransaction(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error){
 	var transaction *domain.Transaction

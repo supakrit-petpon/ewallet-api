@@ -36,6 +36,19 @@ func (m *MockWalletService) TopUp(userId uint, amount float64) (*domain.Transact
     return tx, balance, args.Error(2)
 }
 
+func (m *MockWalletService) Withdraw(userId uint, amount float64) (*domain.Transaction, float64, error){
+		args := m.Called(userId, amount)
+
+    var tx *domain.Transaction
+    if args.Get(0) != nil {
+        tx = args.Get(0).(*domain.Transaction)
+    }
+
+    balance := args.Get(1).(float64)
+
+    return tx, balance, args.Error(2)
+}
+
 func TestBalanceHandler(t *testing.T) {
 	testLog := logger.NewTestLogger(t)
 	mockService := new(MockWalletService)
@@ -126,6 +139,21 @@ func TestTopUpHandler(t *testing.T) {
 		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 		mockService.AssertExpectations(t)
 	})
+	t.Run("missing user context", func(t *testing.T) {
+
+	app := fiber.New()
+	app.Post("/topup", func(c fiber.Ctx) error {
+					c.Locals("userId")
+					return c.Next()
+				}, handler.TopUp)
+	req := httptest.NewRequest("POST", "/topup", bytes.NewBufferString(`{"amount": 1000}`))
+	req.Header.Set("Content-Type", "application/json")
+    resp, _ := app.Test(req)
+
+    assert.Equal(t, 500, resp.StatusCode)
+    
+    mockService.AssertNotCalled(t, "TopUp", "", mock.Anything)
+	})
 	t.Run("wallet not found", func(t *testing.T) {
 		mockService.ExpectedCalls = nil
 		userId := uint(999)
@@ -211,5 +239,144 @@ func TestTopUpHandler(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
 		mockService.AssertExpectations(t)
+	})
+}
+
+func TestWithdraw(t *testing.T){
+	testLog := logger.NewTestLogger(t)
+	mockService := new(MockWalletService)
+	handler := NewWalletHandler(mockService, testLog)
+
+	t.Run("withdraw success", func(t *testing.T) {
+		userId := uint(1)
+		amount := float64(1000)
+		app := fiber.New()
+		app.Post("/withdraw", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Withdraw)
+		mockService.On("Withdraw", userId, amount).Return(&domain.Transaction{}, float64(0), nil)
+
+		req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 1000}`))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("missing user context", func(t *testing.T) {
+
+	app := fiber.New()
+	app.Post("/withdraw", func(c fiber.Ctx) error {
+				c.Locals("userId")
+				return c.Next()
+			}, handler.Withdraw)
+
+	req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 1000}`))
+	req.Header.Set("Content-Type", "application/json")
+    resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+    assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
+    mockService.AssertNotCalled(t, "Withdraw", "", mock.Anything)
+	})
+	t.Run("Invalid req format", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		userId := uint(1)
+
+		app := fiber.New()
+		app.Post("/withdraw", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Withdraw)
+		
+		req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 0`))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("Validation error", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		userId := uint(1)
+
+		app := fiber.New()
+		app.Post("/withdraw", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Withdraw)
+		
+		req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 0`))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("insufficient balance", func(t *testing.T) {
+	mockService.ExpectedCalls = nil
+	userId := uint(1)
+	amount := float64(1000)
+	app := fiber.New()
+	app.Post("/withdraw", func(c fiber.Ctx) error {
+				c.Locals("userId", userId)
+				return c.Next()
+			}, handler.Withdraw)
+	mockService.On("Withdraw", userId, amount).Return(&domain.Transaction{Status: "FAILED"}, float64(0), domain.ErrInsufficientBalance)
+
+	req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 1000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	mockService.AssertExpectations(t)
+	})
+	t.Run("transaction is already created", func(t *testing.T) {
+	mockService.ExpectedCalls = nil
+	userId := uint(1)
+	amount := float64(1000)
+	app := fiber.New()
+	app.Post("/withdraw", func(c fiber.Ctx) error {
+				c.Locals("userId", userId)
+				return c.Next()
+			}, handler.Withdraw)
+	mockService.On("Withdraw", userId, amount).Return(&domain.Transaction{Status: "FAILED"}, float64(0), domain.ErrConflictTransactionRefId)
+
+	req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 1000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusConflict, resp.StatusCode)
+	mockService.AssertExpectations(t)
+	})
+	t.Run("update transaction: transaction record not found", func(t *testing.T) {
+	mockService.ExpectedCalls = nil
+	userId := uint(1)
+	amount := float64(1000)
+	app := fiber.New()
+	app.Post("/withdraw", func(c fiber.Ctx) error {
+				c.Locals("userId", userId)
+				return c.Next()
+			}, handler.Withdraw)
+	mockService.On("Withdraw", userId, amount).Return(&domain.Transaction{Status: "FAILED"}, float64(0), domain.ErrNotFoundTransaction)
+
+	req := httptest.NewRequest("POST", "/withdraw", bytes.NewBufferString(`{"amount": 1000}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+	mockService.AssertExpectations(t)
 	})
 }

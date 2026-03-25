@@ -198,6 +198,73 @@ func TestGormWalletRepository_IncrementBalance(t *testing.T) {
 	})
 }
 
+func TestGormWalletRepository_DecrementBalance(t *testing.T){
+	db, mock, err := sqlmock.New()
+	if err != nil {
+	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+	if err != nil{
+		t.Fatalf("an error '%s' was not expected when opening a gorm database connection", err)
+	}
+	
+	repo := NewGormWalletRepository(gormDB)
+
+	t.Run("update successful", func(t *testing.T) {
+		userId := uint(1)
+		amount := int64(250000)
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(`UPDATE "wallets" SET "balance"=balance - $1,"updated_at"=$2 WHERE (user_id = $3 AND balance >= $4) AND "wallets"."deleted_at" IS NULL RETURNING "balance"`)).
+				WithArgs(amount, sqlmock.AnyArg(), userId, amount).
+				WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(0))
+		mock.ExpectCommit()
+
+		balance, err := repo.DecrementBalance(userId, amount)
+		
+		assert.NoError(t, err)
+		assert.NotNil(t, balance)
+		assert.Equal(t, int64(0), balance)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+	t.Run("wallet record not found", func(t *testing.T) {
+		userId := uint(999)
+		amount := int64(99999)
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(`UPDATE "wallets" SET "balance"=balance - $1,"updated_at"=$2 WHERE (user_id = $3 AND balance >= $4) AND "wallets"."deleted_at" IS NULL RETURNING "balance"`)).
+				WithArgs(amount, sqlmock.AnyArg(), userId, amount).
+				WillReturnRows(sqlmock.NewRows([]string{"balance"}))
+		mock.ExpectCommit()
+
+		balance, err := repo.DecrementBalance(userId, amount)
+
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), balance)
+		assert.Equal(t, domain.ErrInsufficientBalance, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+	t.Run("internal server error", func(t *testing.T) {
+		userId := uint(1)
+		amount := int64(100000)
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(regexp.QuoteMeta(`UPDATE "wallets" SET "balance"=balance - $1,"updated_at"=$2 WHERE (user_id = $3 AND balance >= $4) AND "wallets"."deleted_at" IS NULL RETURNING "balance"`)).
+				WithArgs(amount, sqlmock.AnyArg(), userId, amount).
+				WillReturnError(domain.ErrInternalServerError)
+		mock.ExpectRollback()
+
+		balance, err := repo.DecrementBalance(userId, amount)
+
+		assert.Error(t, err)
+		assert.Equal(t, int64(0), balance)
+		assert.Equal(t, domain.ErrInternalServerError, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
 func TestGormWalletRepository_ExecuteTransaction(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
