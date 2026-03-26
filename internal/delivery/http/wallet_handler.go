@@ -26,25 +26,25 @@ func (h *WalletHandler) Balance(c fiber.Ctx) error {
 	
 	balance, err := h.walletUseCase.Balance(userId)
 	if err != nil {
-		switch{
-		case errors.Is(err, domain.ErrNotFoundWallet):
-			return c.Status(404).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_NOT_FOUND_WALLET,
-				Message: "wallet not found",
-				Error: &dto.ErrorBody{
-					Detail: "not found wallet id in database",
-				},
-			})
-		default:
-			h.logger.Error("unexpected error in wallet handler", err, "path", c.Path())
-			return c.Status(500).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_INTERNAL_ERROR,
-				Message: "something went wrong",
-			})
-		}
-	}
+		var status int
+		var code string
+		var message string
+
+		switch {
+			case errors.Is(err, domain.ErrNotFoundWallet):
+				status, code, message = 404, domain.ERR_AUTH_UNTHORIZED, "wallet is not exist"
+			default:
+				h.logger.Error("unexpected error in auth handler", err, "path", c.Path())
+				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
+        }
+		
+		resp := &dto.Response{
+            Success: false,
+            Code:    code,
+            Message: message,
+        }
+		return c.Status(status).JSON(resp)
+	}	
 
 	return c.Status(200).JSON(&dto.Response{
 				Success: true,

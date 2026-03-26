@@ -59,23 +59,25 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	//Login
 	token, err := h.authUserCase.Login(user.Email, user.Password)
 	if err != nil {
-		switch{
-		case errors.Is(err, domain.ErrAuthUnauthorized):
-			return c.Status(401).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_AUTH_UNTHORIZED,
-				Message: "Invalid email or password",
-			})
-		default:
-			h.logger.Error("unexpected error in login handler", err, "path", c.Path())
-			return c.Status(500).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_INTERNAL_ERROR,
-				Message: "Something went wrong",
-			})
-		}
-    }
+		var status int
+		var code string
+		var message string
+
+		switch {
+			case errors.Is(err, domain.ErrAuthUnauthorized):
+				status, code, message = 401, domain.ERR_AUTH_UNTHORIZED, "Invalid email or password"
+			default:
+				h.logger.Error("unexpected error in auth handler", err, "path", c.Path())
+				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
+        }
 		
+		resp := &dto.Response{
+            Success: false,
+            Code:    code,
+            Message: message,
+        }
+		return c.Status(status).JSON(resp)
+	}	
 	//Collet token to Cookies
 	c.Cookie(&fiber.Cookie{
 			Name: "jwt",

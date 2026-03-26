@@ -53,35 +53,29 @@ func (h *UserHandler) Register(c fiber.Ctx) error {
 		})
 	}
 
-	if err := h.userUserCase.Register(user); err != nil{
-		switch{
-		case errors.Is(err, domain.ErrConflictEmail):
-			return c.Status(409).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_CONFLICT_EMAIL,
-				Message: "this email is already registered",
-				Error: &dto.ErrorBody{
-					Detail: "this email is already registered",
-				},
-			})
-		case errors.Is(err, domain.ErrConflictUserWallet):
-			return c.Status(409).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_CONFLICT_USER_WALLET,
-				Message: "this user is already has wallet",
-				Error: &dto.ErrorBody{
-					Detail: "this user is already has wallet",
-				},
-			})
-		default:
-			h.logger.Error("unexpected error in user handler", err, "path", c.Path())
-			return c.Status(500).JSON(&dto.Response{
-				Success: false,
-				Code: domain.ERR_INTERNAL_ERROR,
-				Message: "Something went wrong",
-			})
-		}
-	}
+	err := h.userUserCase.Register(user)
+	if err != nil {
+		var status int
+		var code string
+		var message string
+
+		switch {
+			case errors.Is(err, domain.ErrConflictEmail):
+				status, code, message = 409, domain.ERR_CONFLICT_EMAIL, "this email is already registered"
+			case errors.Is(err, domain.ErrConflictUserWallet):
+				status, code, message = 409, domain.ERR_CONFLICT_USER_WALLET, "this user is already has wallet"
+			default:
+				h.logger.Error("unexpected error in user handler", err, "path", c.Path())
+				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
+        }
+		
+		resp := &dto.Response{
+            Success: false,
+            Code:    code,
+            Message: message,
+        }
+		return c.Status(status).JSON(resp)
+	}	
 
 	return c.Status(201).JSON(&dto.Response{
 				Success: true,
