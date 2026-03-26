@@ -10,14 +10,14 @@ import (
 
 type mockWalletRepo struct {
 	createFunc func(wallet domain.Wallet) error
-	getFunc func(id uint) (*domain.Wallet, error)
+	getFunc func(userId uint) (*domain.Wallet, error)
 	incrementBalanceFunc func(userId uint, amount int64) (int64, error)
 	decrementBalanceFunc func(userId uint, amount int64) (int64, error)
 	executeTransactionFunc func(func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error)
 }
 
-func (m *mockWalletRepo) Get(id uint) (*domain.Wallet, error) {
-	return m.getFunc(id)
+func (m *mockWalletRepo) Get(userId uint) (*domain.Wallet, error) {
+	return m.getFunc(userId)
 }
 
 func (m *mockWalletRepo) Create(wallet domain.Wallet) error {
@@ -80,7 +80,6 @@ func TestBalance(t *testing.T) {
 		assert.Equal(t, domain.ErrInternalServerError, err)
 	})
 }
-
 func TestTopUp(t *testing.T) {
 	testLog := logger.NewTestLogger(t)
 	t.Run("success topup with transaction", func(t *testing.T) {
@@ -90,7 +89,7 @@ func TestTopUp(t *testing.T) {
 
 		called := false
 		//1. Get wallet id
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 
@@ -105,7 +104,7 @@ func TestTopUp(t *testing.T) {
 		}
 
 		//4. Increment balance
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			return 150000, nil
 		}
 
@@ -133,7 +132,7 @@ func TestTopUp(t *testing.T) {
 		//For checking func call
 		called := false
 
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return nil, domain.ErrNotFoundWallet
 		}
 
@@ -147,7 +146,7 @@ func TestTopUp(t *testing.T) {
 			return nil
 		}
 
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			called = true
 			return 150000, nil
 		}
@@ -168,7 +167,7 @@ func TestTopUp(t *testing.T) {
 		//For checking func call
 		called := false
 
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 		
@@ -181,7 +180,7 @@ func TestTopUp(t *testing.T) {
 			return fn(walletRepo, txRepo)
 		}
 
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			called = true
 			return 150000, nil
 		}
@@ -200,7 +199,7 @@ func TestTopUp(t *testing.T) {
 		service := NewWalletService(walletRepo, txRepo, testLog)
 		
 		
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 		txRepo.createTxFunc = func(tx domain.Transaction) error {
@@ -210,7 +209,7 @@ func TestTopUp(t *testing.T) {
 		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
 			return fn(walletRepo, txRepo)
 		}
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			return 1, nil
 		}
 		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
@@ -230,7 +229,7 @@ func TestTopUp(t *testing.T) {
 		
 		called := false
 
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 		txRepo.createTxFunc = func(tx domain.Transaction) error {
@@ -240,7 +239,7 @@ func TestTopUp(t *testing.T) {
 		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
 			return fn(walletRepo, txRepo)
 		}
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			return 0, domain.ErrNotFoundWallet
 		}
 		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
@@ -267,7 +266,7 @@ func TestWithdraw(t *testing.T){
 
 		called := false
 		//1. Get wallet id
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userID uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 
@@ -281,8 +280,8 @@ func TestWithdraw(t *testing.T){
 			return fn(walletRepo, txRepo)
 		}
 
-		//4. Increment balance
-		walletRepo.incrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		//4. Decrement balance
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			return 150000, nil
 		}
 
@@ -294,7 +293,7 @@ func TestWithdraw(t *testing.T){
 			return &domain.Transaction{}, nil
 		}
 
-		transaction, balance, err := service.TopUp(1, 50000)
+		transaction, balance, err := service.Withdraw(1, 50000)
 
 		assert.True(t, called, "should call update transaction status")
 		assert.NoError(t, err)
@@ -310,7 +309,7 @@ func TestWithdraw(t *testing.T){
 		//For checking func call
 		called := false
 
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return nil, domain.ErrNotFoundWallet
 		}
 
@@ -324,7 +323,7 @@ func TestWithdraw(t *testing.T){
 			return nil
 		}
 
-		walletRepo.decrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			called = true
 			return 150000, nil
 		}
@@ -345,7 +344,7 @@ func TestWithdraw(t *testing.T){
 		//For checking func call
 		called := false
 
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 		
@@ -358,7 +357,7 @@ func TestWithdraw(t *testing.T){
 			return fn(walletRepo, txRepo)
 		}
 
-		walletRepo.decrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			called = true
 			return 150000, nil
 		}
@@ -377,7 +376,7 @@ func TestWithdraw(t *testing.T){
 		service := NewWalletService(walletRepo, txRepo, testLog)
 		
 		
-		walletRepo.getFunc = func(id uint) (*domain.Wallet, error) {
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
 			return &domain.Wallet{}, nil
 		}
 		txRepo.createTxFunc = func(tx domain.Transaction) error {
@@ -387,7 +386,7 @@ func TestWithdraw(t *testing.T){
 		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
 			return fn(walletRepo, txRepo)
 		}
-		walletRepo.decrementBalanceFunc = func(userId uint, amount int64) (int64, error) {
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
 			return 0, domain.ErrInsufficientBalance
 		}
 		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {

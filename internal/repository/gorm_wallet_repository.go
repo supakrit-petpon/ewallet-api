@@ -50,12 +50,12 @@ func (r *GormWalletRepository) Get(userId uint) (*domain.Wallet, error) {
 	return wallet, nil
 }
 
-func (r *GormWalletRepository) IncrementBalance(userId uint, amount int64) (int64, error){
+func (r *GormWalletRepository) IncrementBalance(walletId uint, amount int64) (int64, error){
 	var wallet domain.Wallet
     
     result := r.db.Model(&wallet).
         Clauses(clause.Returning{Columns: []clause.Column{{Name: "balance"}}}).
-        Where("user_id = ?", userId).
+        Where("id = ?", walletId).
         Update("balance", gorm.Expr("balance + ?", amount))
 
     if result.Error != nil {
@@ -67,12 +67,13 @@ func (r *GormWalletRepository) IncrementBalance(userId uint, amount int64) (int6
 	
     return int64(wallet.Balance), nil
 }
+
 func (r *GormWalletRepository) DecrementBalance(userId uint, amount int64) (int64, error){
 	var wallet domain.Wallet
     
     result := r.db.Model(&wallet).
         Clauses(clause.Returning{Columns: []clause.Column{{Name: "balance"}}}).
-        Where("user_id = ? AND balance >= ?", userId, amount).
+        Where("id = ? AND balance >= ?", userId, amount).
         Update("balance", gorm.Expr("balance - ?", amount))
 
     if result.Error != nil {

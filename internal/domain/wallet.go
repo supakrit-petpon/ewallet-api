@@ -17,8 +17,8 @@ type Wallet struct {
 type WalletRepository interface {
 	Create(wallet Wallet) error
 	Get(userId uint) (*Wallet, error)
-	IncrementBalance(userId uint, amount int64) (int64, error)
-	DecrementBalance(userId uint, amoint int64) (int64, error)
+	IncrementBalance(walletId uint, amount int64) (int64, error)
+	DecrementBalance(walletId uint, amoint int64) (int64, error)
 
 	//DB transaction to update wallet & create transaction
 	ExecuteTransaction(fn func(txWallet WalletRepository, txTrans TransactionRepository) (*Transaction, float64, error)) (*Transaction, float64, error)

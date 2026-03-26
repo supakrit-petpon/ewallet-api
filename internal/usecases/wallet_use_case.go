@@ -12,6 +12,7 @@ type WalletUseCase interface{
 	Balance(userId uint) (string, error)
 	TopUp(userId uint, amount float64) (*domain.Transaction, float64, error)
 	Withdraw(userId uint, amount float64) (*domain.Transaction, float64, error)
+	// Transfer(desId uint, amount float64) (*domain.Transaction, float64, error)
 }
 
 type WalletService struct{
@@ -78,7 +79,7 @@ func (s *WalletService) TopUp(userId uint, amount float64) (*domain.Transaction,
 	//3. เริ่ม Database Transaction
 	transaction, balance, err := s.repo.ExecuteTransaction(func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error) {
 
-		updatedBalance, err := txWallet.IncrementBalance(userId, int64(amount*100))	
+		updatedBalance, err := txWallet.IncrementBalance(wallet.ID, int64(amount*100))	
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFoundWallet){
 				s.logger.Warn("TopUp failed: wallet record not found", err)
@@ -153,7 +154,7 @@ func (s *WalletService) Withdraw(userId uint, amount float64) (*domain.Transacti
 	//3. เริ่ม Database Transaction
 	transaction, balance, err := s.repo.ExecuteTransaction(func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error) {
 
-		updatedBalance, err := txWallet.DecrementBalance(userId, int64(amount*100))	
+		updatedBalance, err := txWallet.DecrementBalance(wallet.ID, int64(amount*100))	
 		if err != nil {
 			if errors.Is(err, domain.ErrInsufficientBalance){
 				s.logger.Warn("Withdraw failed: insufficient balance for this transaction", err)
@@ -187,3 +188,71 @@ func (s *WalletService) Withdraw(userId uint, amount float64) (*domain.Transacti
 
 	return transaction, balance , nil
 }
+
+// func (s *WalletService) Transfer(userId uint, desId uint, amount float64) (*domain.Transaction, float64, error){
+// 	refID := fmt.Sprintf("TRANSFER-%d-%d", userId, time.Now().UnixNano())
+
+// 	//1. Get Wallet Id
+// 	wallet, err := s.repo.Get(userId)
+// 	if err != nil {
+// 		if errors.Is(err, domain.ErrNotFoundWallet){
+// 			s.logger.Warn("Withdraw failed: wallet record not found", err, "user_id", userId)
+// 			return nil, 0, err
+// 		}
+
+// 		s.logger.Error("Withdraw failed: database connection lost during get wallet", err)
+// 		return nil, 0, err
+// 	}
+
+// 	//2. Create Transaction
+// 	err = s.txRepo.Create(&domain.Transaction{
+// 				SourceID:   &wallet.ID,
+// 				DestinationID: &desId,
+// 				Amount:          int(amount * 100),
+// 				TransactionType: "Transfer",
+// 				Status: 		"PENDING",
+// 				ReferenceID:     refID,
+// 	});
+// 	if err != nil {
+// 		if errors.Is(err, domain.ErrConflictTransactionRefId){
+// 			s.logger.Warn("Withdraw failed: this transaction is already created", err, "component", "wallet service")
+// 			return nil, 0, err
+// 		}
+
+// 		s.logger.Error("Withdraw failed: database connection lost during create user", err)
+// 		return nil, 0, err
+// 	}
+
+// 	//3. เริ่ม Database Transaction
+// 	transaction, balance, err := s.repo.ExecuteTransaction(func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error) {
+
+// 		//3.1 ลดเงินของเจ้าของบัญชี
+// 		updatedBalance, err := txWallet.DecrementBalance(userId, int64(amount*100))	
+// 		if err != nil {
+// 			if errors.Is(err, domain.ErrInsufficientBalance){
+// 				s.logger.Warn("Transfer failed: insufficient balance for this transaction for", err)
+// 				return nil, 0, err
+// 			}
+
+// 			s.logger.Error("Transfer failed: database connection lost during increment balance", err)
+// 			return nil, 0, err
+// 		}	
+		
+// 		//3.2 เพิ่มเงินบัญชีปลายทาง
+// 		_, err := tx.wallet.IncrementBalance()
+
+// 		//Update transaction ด้วย status 'SUCCESS'
+// 		// transaction, err := txTrans.Update(newTx.ID, "SUCCESS"); if err != nil {
+// 		// 	if errors.Is(err, domain.ErrNotFoundTransaction){
+// 		// 		s.logger.Warn("Withdraw failed: transaction record not found", err)
+// 		// 		return nil, 0, err
+// 		// 	}
+
+// 		// 	s.logger.Error("Withdraw failed: database connection lost during updating transaction", err)
+// 		// 	return nil, 0, err
+// 		// }
+	
+// 		return transaction, float64(updatedBalance),  nil
+// 	})
+
+// }
