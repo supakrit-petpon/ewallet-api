@@ -131,9 +131,8 @@ func (s *WalletService) Withdraw(userId uint, amount float64) (*domain.Transacti
 		return nil, 0, err
 	}
 
-	//2. สร้าง transaction ด้วย status 'PENDING'
 	newTx := &domain.Transaction{
-				DestinationID:   &wallet.ID,
+				SourceID:   &wallet.ID,
 				Amount:          int(amount * 100),
 				TransactionType: "WITHDRAW",
 				Status: "PENDING",
