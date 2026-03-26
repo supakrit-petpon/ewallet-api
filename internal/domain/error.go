@@ -23,6 +23,7 @@ var (
     ErrConflictUserWallet = errors.New("this user is already has wallet")
     ErrConflictTransactionRefId = errors.New("this transaction is already created")
     ErrInsufficientBalance = errors.New("insufficient balance for this transaction")
+    ErrConflictSourceDesId  = errors.New("source_id and destination_id can't be same")
 
     // Internal Server error
     ErrInternalServerError = errors.New("internal server error")
@@ -43,6 +44,7 @@ var(
     ERR_CONFLICT_USER_WALLET         = "CONFLICT_USER_WALLET"
     ERR_CONFLICT_TRANSACTION_REFID       = "CONFLICT_TRANSACTION_REFID"
     ERR_INSUFFICIENT_BALANCE      = "INSUFFICIENT_BALANCE"
+    ERR_CONFLITCT_SOURCE_DES_ID = "CONFLITCT_SOURCE_DES_ID"
     
     // Internal Server error
     ERR_INTERNAL_ERROR = "INTERNAL_ERROR"

@@ -401,3 +401,191 @@ func TestWithdraw(t *testing.T){
 		assert.Equal(t, domain.ErrInsufficientBalance, err)
 	})
 }
+func TestTransfer(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
+	t.Run("success", func(t *testing.T) {
+		walletRepo := &mockWalletRepo{}
+		txRepo := &mockTransactionRepo{}
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		called := false
+		//1. Get wallet id
+		walletRepo.getFunc = func(userID uint) (*domain.Wallet, error) {
+			return &domain.Wallet{UserID: userID}, nil
+		}
+
+		//2. Create tx 'PENDING'
+		txRepo.createTxFunc = func(tx domain.Transaction) error {
+			return nil
+		}
+
+		//3. Execute db transaction
+		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
+			return fn(walletRepo, txRepo)
+		}
+
+		//4. Decrement balance
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			return 0, nil
+		}
+		//5. Increment balance
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			return 100, nil
+		}
+
+		//6. update status to "SUCCESS"
+		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
+			called = true
+
+			assert.Equal(t, "SUCCESS", status)
+			return &domain.Transaction{}, nil
+		}
+
+		transaction, balance, err := service.Transfer(1, 2, 100)
+
+		assert.True(t, called, "should call update transaction status")
+		assert.NoError(t, err)
+		assert.NotNil(t, transaction)
+
+		assert.Equal(t, float64(0), balance)
+	})
+	t.Run("transfer failure: wallet record not found", func(t *testing.T) {
+		walletRepo := &mockWalletRepo{}
+		txRepo := &mockTransactionRepo{}
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		called := false
+		//1. Get wallet id
+		walletRepo.getFunc = func(userID uint) (*domain.Wallet, error) {
+			return nil, domain.ErrNotFoundWallet
+		}
+
+		//2. Create tx 'PENDING'
+		txRepo.createTxFunc = func(tx domain.Transaction) error {
+			called = true
+			return nil
+		}
+
+		//3. Execute db transaction
+		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
+			called = true
+			return fn(walletRepo, txRepo)
+		}
+
+		//4. Decrement balance
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			called = true
+			return 0, nil
+		}
+		//5. Increment balance
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			called = true
+			return 100, nil
+		}
+
+		//6. update status to "SUCCESS"
+		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
+			called = true
+
+			assert.Equal(t, "SUCCESS", status)
+			return &domain.Transaction{}, nil
+		}
+
+		_, _, err := service.Transfer(1, 2, 100)
+
+		assert.False(t, called, "should not call rest of code")
+		assert.Error(t, err)
+	})
+	t.Run("transfer failure: create transaction failure", func(t *testing.T) {
+		walletRepo := &mockWalletRepo{}
+		txRepo := &mockTransactionRepo{}
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		called := false
+		//1. Get wallet id
+		walletRepo.getFunc = func(userID uint) (*domain.Wallet, error) {
+			return &domain.Wallet{UserID: 1}, nil
+		}
+
+		//2. Create tx 'PENDING'
+		txRepo.createTxFunc = func(tx domain.Transaction) error {
+			return domain.ErrInternalServerError
+		}
+
+		//3. Execute db transaction
+		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
+			called = true
+			return fn(walletRepo, txRepo)
+		}
+
+		//4. Decrement balance
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			called = true
+			return 0, nil
+		}
+		//5. Increment balance
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			called = true
+			return 100, nil
+		}
+
+		//6. update status to "SUCCESS"
+		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
+			called = true
+
+			assert.Equal(t, "SUCCESS", status)
+			return &domain.Transaction{}, nil
+		}
+
+		_, _, err := service.Transfer(1, 1, 100)
+		assert.False(t, called, "should not call rest of code")
+		assert.Error(t, err)
+		assert.Equal(t, domain.ErrInternalServerError, err)
+	})
+	t.Run("transfer failed: insufficient balance for this transaction", func(t *testing.T) {
+		walletRepo := &mockWalletRepo{}
+		txRepo := &mockTransactionRepo{}
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		called := false
+		updateTransactionCalled := false
+		//1. Get wallet id
+		walletRepo.getFunc = func(userID uint) (*domain.Wallet, error) {
+			return &domain.Wallet{UserID: 1}, nil
+		}
+
+		//2. Create tx 'PENDING'
+		txRepo.createTxFunc = func(tx domain.Transaction) error {
+			return nil
+		}
+
+		//3. Execute db transaction
+		walletRepo.executeTransactionFunc = func(fn func(txWallet domain.WalletRepository, txTrans domain.TransactionRepository) (*domain.Transaction, float64, error)) (*domain.Transaction, float64, error) {
+			return fn(walletRepo, txRepo)
+		}
+
+		//4. Decrement balance
+		walletRepo.decrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			return 0, domain.ErrInsufficientBalance
+		}
+		//5. Increment balance
+		walletRepo.incrementBalanceFunc = func(walletId uint, amount int64) (int64, error) {
+			called = true
+			return 100, nil
+		}
+
+		//6. update status to "SUCCESS"
+		txRepo.updateTxFunc = func(id uint, status string) (*domain.Transaction, error) {
+			updateTransactionCalled = true
+
+			assert.Equal(t, "FAILED", status)
+			return &domain.Transaction{}, nil
+		}
+
+		_, _, err := service.Transfer(1, 1, 100)
+		assert.True(t, updateTransactionCalled, "should call update transaction")
+		assert.False(t, called, "should not call increment balance")
+		assert.Error(t, err)
+		assert.Equal(t, domain.ErrInsufficientBalance, err)
+	})
+}

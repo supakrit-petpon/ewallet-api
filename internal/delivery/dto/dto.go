@@ -13,6 +13,8 @@ type Response struct {
 
 type TransactionData struct {
     RefID          string    `json:"ref_id,omitempty"`
+    SourceID       *uint     `json:"source_id,omitempty"`
+    DestinationID  *uint     `json:"destination_id,omitempty"`
     Amount         string   `json:"amount,omitempty"`
     Currency       string    `json:"currency,omitempty"`
     CurrentBalance string   `json:"current_balance,omitempty"`
