@@ -589,3 +589,48 @@ func TestTransfer(t *testing.T) {
 		assert.Equal(t, domain.ErrInsufficientBalance, err)
 	})
 }
+
+func TestInfo(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
+	walletRepo := &mockWalletRepo{}
+	txRepo := &mockTransactionRepo{}
+	t.Run("success", func(t *testing.T) {
+		userId := uint(1)
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
+			return &domain.Wallet{}, nil
+		}
+
+		walletID, err := service.Info(userId)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, walletID)
+	})
+	t.Run("failure: wallet not found", func(t *testing.T) {
+		userId := uint(1)
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
+			return nil, domain.ErrNotFoundWallet
+		}
+
+		_, err := service.Info(userId)
+
+		assert.Error(t, err)
+		assert.Equal(t, domain.ErrNotFoundWallet, err)
+	})
+	t.Run("failure: internal server error", func(t *testing.T) {
+		userId := uint(1)
+		service := NewWalletService(walletRepo, txRepo, testLog)
+
+		walletRepo.getFunc = func(userId uint) (*domain.Wallet, error) {
+			return nil, domain.ErrInternalServerError
+		}
+
+		_, err := service.Info(userId)
+
+		assert.Error(t, err)
+		assert.Equal(t, domain.ErrInternalServerError, err)
+	})
+}

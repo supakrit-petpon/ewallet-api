@@ -27,6 +27,7 @@ func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler,
     wallet.Post("/topup", walletHandler.TopUp)
     wallet.Post("/withdraw", walletHandler.Withdraw)
     wallet.Post("/transfer", walletHandler.Transfer)
+    wallet.Get("/info", walletHandler.Info)
 
     //Transaction Routes
     transaction := v1.Group("/transaction")

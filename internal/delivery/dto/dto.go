@@ -22,6 +22,9 @@ type TransactionData struct {
     Status          string `json:"status,omitempty"`
     Transaction_Type string  `json:"transaction_type,omitempty"`
 }
+type InfoData struct{
+    WalletID uint `json:"wallet_id,omitempty"`
+}
 
 type ErrorBody struct{
     Detail string `json:"detail,omitempty"`

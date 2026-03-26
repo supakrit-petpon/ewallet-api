@@ -348,3 +348,45 @@ func (h *WalletHandler) Transfer(c fiber.Ctx) error {
         },
     })
 }
+
+func (h *WalletHandler) Info(c fiber.Ctx) error {
+    val := c.Locals("userId")
+    userId, ok := val.(uint)
+    if !ok {
+        return c.Status(500).JSON(&dto.Response{
+			Success: false,
+			Code: domain.ERR_INTERNAL_ERROR,
+			Message: "internal server error: user context missing",
+		})
+    }
+    walletId, err := h.walletUseCase.Info(userId)
+    if err != nil {
+        var status int
+        var code string
+        var message string
+
+        // 1. กำหนดค่าตามประเภท Error
+        switch {
+        case errors.Is(err, domain.ErrNotFoundWallet):
+            status, code, message = 404, domain.ERR_NOT_FOUND_WALLET, "wallet record not found"
+        default:
+            h.logger.Error("unexpected error in wallet handler", err, "path", c.Path())
+            status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
+        }
+
+        // 2. สร้าง Response Object ครั้งเดียว
+        resp := &dto.Response{
+            Success: false,
+            Code:    code,
+            Message: message,
+        }
+        return c.Status(status).JSON(resp)
+    }
+    return c.Status(200).JSON(&dto.Response{
+            Success: false,
+            Code:    "SUCCESS",
+            Data: map[string]uint{
+                "walletId": walletId,
+            },
+        })
+}

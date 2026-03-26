@@ -62,6 +62,12 @@ func (m *MockWalletService) Transfer(userId uint, desId uint, amount float64) (*
     return tx, balance, args.Error(2)
 }
 
+func (m *MockWalletService) Info(userId uint) (uint, error) {
+	args := m.Called(userId)
+	id := args.Get(0).(uint)
+	return id, args.Error(1)
+}
+
 func TestBalanceHandler(t *testing.T) {
 	testLog := logger.NewTestLogger(t)
 	mockService := new(MockWalletService)
@@ -593,6 +599,92 @@ func TestTransfer(t *testing.T) {
 
 		req := httptest.NewRequest("POST", "/transfer", bytes.NewBufferString(`{"destination_id": 2, "amount": 1000}`))
 		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestInfo(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
+	mockService := new(MockWalletService)
+	handler := NewWalletHandler(mockService, testLog)
+	
+	t.Run("success", func(t *testing.T) {
+		app := fiber.New()
+		userId := uint(1)
+		walletId := uint(2)
+
+		app.Get("/info", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Info)
+
+		mockService.On("Info", userId).Return(walletId, nil)
+
+		req := httptest.NewRequest("GET", "/info", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: missing user context", func(t *testing.T) {
+		app := fiber.New()
+		app.Get("/info", func(c fiber.Ctx) error {
+					c.Locals("userId")
+					return c.Next()
+				}, handler.Info)
+
+		req := httptest.NewRequest("GET", "/info", nil)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
+		mockService.AssertNotCalled(t, "Info", mock.AnythingOfType("sting"))
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: wallet not found", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		app := fiber.New()
+		userId := uint(1)
+
+		app.Get("/info", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Info)
+
+		mockService.On("Info", userId).Return(uint(0), domain.ErrNotFoundWallet)
+
+		req := httptest.NewRequest("GET", "/info", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: internal server error", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		app := fiber.New()
+		userId := uint(1)
+
+		app.Get("/info", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.Info)
+
+		mockService.On("Info", userId).Return(uint(0), domain.ErrInternalServerError)
+
+		req := httptest.NewRequest("GET", "/info", nil)
+		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := app.Test(req)
 
 		assert.NoError(t, err)

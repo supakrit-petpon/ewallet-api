@@ -13,6 +13,7 @@ type WalletUseCase interface{
 	TopUp(userId uint, amount float64) (*domain.Transaction, float64, error)
 	Withdraw(userId uint, amount float64) (*domain.Transaction, float64, error)
 	Transfer(userId uint, desId uint, amount float64) (*domain.Transaction, float64, error)
+	Info(userId uint) (uint, error)
 }
 
 type WalletService struct{
@@ -285,4 +286,19 @@ func (s *WalletService) Transfer(userId uint, desId uint, amount float64) (*doma
 	}
 
 	return transaction, balance, err
+}
+
+func (s *WalletService) Info(userId uint) (uint, error){
+	wallet, err := s.repo.Get(userId)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFoundWallet){
+			s.logger.Warn("Transfer failed: wallet record not found", err, "user_id", userId)
+			return 0, err
+		}
+
+		s.logger.Error("Transfer failed: database connection lost during get wallet", err)
+		return 0, err
+	}
+
+	return wallet.ID, nil
 }
