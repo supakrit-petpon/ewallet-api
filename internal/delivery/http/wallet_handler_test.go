@@ -151,7 +151,6 @@ func TestTopUpHandler(t *testing.T) {
     resp, _ := app.Test(req)
 
     assert.Equal(t, 500, resp.StatusCode)
-    
     mockService.AssertNotCalled(t, "TopUp", "", mock.Anything)
 	})
 	t.Run("wallet not found", func(t *testing.T) {

@@ -14,24 +14,22 @@ func main(){
 	application := app.NewApplication()
 	logger := application.Logger
 
-	//1. Set up User Layer
+	//1. Set up Repo & Provider
 	userRepo := repository.NewGormUserRepository(application.DB)
-	userService := usecases.NewUserService(userRepo, logger)
-	userHandler := http.NewUserHandler(userService, logger)
-
-	//2. Auth
 	tokenProvider := jwt.NewTokenProvider(application.Config.SecretKey)
-	authService := usecases.NewAuthService(userRepo, tokenProvider, logger)
-	authHandler := http.NewAuthHandler(authService, logger)
-
-	//3. Transaction
 	txRepo := repository.NewGormTransactionRepository(application.DB)
-	txService := usecases.NewTransactionService(txRepo, logger)
-	txHandler := http.NewTransactionHandler(txService, logger)
-
-	//4. Wallet
 	walletRepo := repository.NewGormWalletRepository(application.DB)
+
+	//2. Set up Service Layers
+	userService := usecases.NewUserService(userRepo, logger)
+	authService := usecases.NewAuthService(userRepo, tokenProvider, logger)
+	txService := usecases.NewTransactionService(txRepo, walletRepo, logger)
 	walletService := usecases.NewWalletService(walletRepo, txRepo, logger)
+	
+	//3. Set up Handler Layers
+	userHandler := http.NewUserHandler(userService, logger)
+	authHandler := http.NewAuthHandler(authService, logger)
+	txHandler := http.NewTransactionHandler(txService, logger)
 	walletHandler := http.NewWalletHandler(walletService, logger)
 
 	routes.MapRoutes(application.App, application.Config.SecretKey, userHandler, authHandler, walletHandler, txHandler)

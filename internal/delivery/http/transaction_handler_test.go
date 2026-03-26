@@ -25,6 +25,16 @@ func (m * MockTransactionService) GetTransaction(refId string) (*domain.Transact
 
 	return tx, args.Error(1)
 }
+func (m * MockTransactionService) GetAllTransaction(userId uint) ([]domain.Transaction, error) {
+	args := m.Called(userId)
+
+	var transactions []domain.Transaction
+    if args.Get(0) != nil {
+        transactions = args.Get(0).([]domain.Transaction)
+    }
+
+	return transactions, args.Error(1)
+}
 
 func TestGetTransactionHandler(t *testing.T) {
 	testLog := logger.NewTestLogger(t)
@@ -112,6 +122,93 @@ func TestGetTransactionHandler(t *testing.T) {
 		resp, _ := app.Test(req)
 
 		assert.Equal(t, fiber.ErrInternalServerError.Code, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestGetAllTransactionHandler(t *testing.T) {
+	testLog := logger.NewTestLogger(t)
+	mockService := new(MockTransactionService)
+	handler := NewTransactionHandler(mockService, testLog)
+
+	t.Run("success", func(t *testing.T) {
+		userId := uint(1)
+		expectedTransactions := []domain.Transaction{
+			{TransactionType: "TOPUP"},
+			{TransactionType: "WITHDRAW"},
+		}
+		app := fiber.New()
+		app.Get("/transaction", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.GetAllTransaction)
+
+		mockService.On("GetAllTransaction", userId).Return(expectedTransactions, nil)
+
+		req := httptest.NewRequest("GET", "/transaction", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: user context is missing", func(t *testing.T) {
+		app := fiber.New()
+		app.Get("/transaction", func(c fiber.Ctx) error {
+					c.Locals("userId")
+					return c.Next()
+				}, handler.GetAllTransaction)
+
+		req := httptest.NewRequest("GET", "/transaction", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 500, resp.StatusCode)
+		mockService.AssertNotCalled(t, "GetAllTransaction", "")
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: wallet record not found", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		userId := uint(1)
+		app := fiber.New()
+		app.Get("/transaction", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.GetAllTransaction)
+
+		mockService.On("GetAllTransaction", userId).Return(nil, domain.ErrNotFoundWallet)
+
+		req := httptest.NewRequest("GET", "/transaction", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusNotFound, resp.StatusCode)
+		mockService.AssertExpectations(t)
+	})
+	t.Run("failure: internal server error", func(t *testing.T) {
+		mockService.ExpectedCalls = nil
+		userId := uint(1)
+		app := fiber.New()
+		app.Get("/transaction", func(c fiber.Ctx) error {
+					c.Locals("userId", userId)
+					return c.Next()
+				}, handler.GetAllTransaction)
+
+		mockService.On("GetAllTransaction", userId).Return(nil, domain.ErrInternalServerError)
+
+		req := httptest.NewRequest("GET", "/transaction", nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := app.Test(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
 		mockService.AssertExpectations(t)
 	})
 }

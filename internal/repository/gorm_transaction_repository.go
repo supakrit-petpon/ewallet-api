@@ -66,4 +66,12 @@ func (r *GormTransactionRepository) Get(refId string) (*domain.Transaction, erro
 }
 
 
-
+func (r *GormTransactionRepository) GetAll(walletId uint) ([]domain.Transaction, error) {
+	var transactions []domain.Transaction
+	err := r.db.Where("source_id = ? OR destination_id = ?", walletId, walletId).Order("created_at DESC").Find(&transactions).Error
+	if err != nil {
+		return nil, domain.ErrInternalServerError
+	}
+	
+	return transactions, nil
+}

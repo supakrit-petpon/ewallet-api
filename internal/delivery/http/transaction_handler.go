@@ -56,3 +56,41 @@ func (h *TransactionHandler) GetTransaction(c fiber.Ctx) error {
 		Data: transaction,
 	})
 }
+func (h *TransactionHandler) GetAllTransaction(c fiber.Ctx) error {
+	val := c.Locals("userId")
+    userId, ok := val.(uint)
+    if !ok {
+        return c.Status(500).JSON(&dto.Response{
+			Success: false,
+			Code: domain.ERR_INTERNAL_ERROR,
+			Message: "internal server error: user context missing",
+		})
+    }
+	
+	transactions, err := h.service.GetAllTransaction(userId)
+	if err != nil {
+		var status int
+		var code string
+		var message string
+
+		switch {
+			case errors.Is(err, domain.ErrNotFoundWallet):
+				status, code, message = 404, domain.ERR_NOT_FOUND_WALLET, "wallet record not found"
+			default:
+				h.logger.Error("unexpected error in transaction handler", err, "path", c.Path())
+				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
+        }
+		
+		resp := &dto.Response{
+            Success: false,
+            Code:    code,
+            Message: message,
+        }
+		return c.Status(status).JSON(resp)
+	}
+
+	return c.JSON(&dto.Response{
+		Success: true,
+		Data: transactions,
+	})
+}

@@ -31,4 +31,5 @@ func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler,
     transaction := v1.Group("/transaction")
     transaction.Use(middleware.AuthRequired(secretKey))
     transaction.Get("/:refId", transactionHandler.GetTransaction)
+    transaction.Get("/", transactionHandler.GetAllTransaction)
 }

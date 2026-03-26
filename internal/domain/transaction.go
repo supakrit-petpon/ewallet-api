@@ -22,4 +22,5 @@ type TransactionRepository interface{
 	Create(transaction *Transaction) error
 	Update(id uint, status string) (*Transaction, error)
 	Get(refId string) (*Transaction, error)
+	GetAll(walletId uint) ([]Transaction, error)
 }
