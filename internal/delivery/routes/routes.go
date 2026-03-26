@@ -7,7 +7,9 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler, authHandler *http.AuthHandler, walletHandler *http.WalletHandler) {
+func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler,
+     authHandler *http.AuthHandler, walletHandler *http.WalletHandler,
+     transactionHandler *http.TransactionHandler) {
     // API Grouping
     v1 := app.Group("/api/v1")
 
@@ -24,4 +26,9 @@ func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler, 
     wallet.Get("/balance", walletHandler.Balance)
     wallet.Post("/topup", walletHandler.TopUp)
     wallet.Post("/withdraw", walletHandler.Withdraw)
+
+    //Transaction Routes
+    transaction := v1.Group("/transaction")
+    transaction.Use(middleware.AuthRequired(secretKey))
+    transaction.Get("/:refId", transactionHandler.GetTransaction)
 }

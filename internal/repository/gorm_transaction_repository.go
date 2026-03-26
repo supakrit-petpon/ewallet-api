@@ -50,3 +50,20 @@ func (r *GormTransactionRepository) Update(id uint, status string) (*domain.Tran
 
     return trans, nil
 }
+
+func (r *GormTransactionRepository) Get(refId string) (*domain.Transaction, error) {
+	transaction := new(domain.Transaction)
+
+    if err := r.db.First(transaction, "reference_id = ?", refId).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound){
+			return nil, domain.ErrNotFoundTransaction
+		}
+
+		return nil, domain.ErrInternalServerError
+    }
+
+    return transaction, nil
+}
+
+
+

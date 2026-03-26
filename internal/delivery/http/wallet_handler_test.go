@@ -37,7 +37,7 @@ func (m *MockWalletService) TopUp(userId uint, amount float64) (*domain.Transact
 }
 
 func (m *MockWalletService) Withdraw(userId uint, amount float64) (*domain.Transaction, float64, error){
-		args := m.Called(userId, amount)
+	args := m.Called(userId, amount)
 
     var tx *domain.Transaction
     if args.Get(0) != nil {

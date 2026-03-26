@@ -26,13 +26,15 @@ func main(){
 
 	//3. Transaction
 	txRepo := repository.NewGormTransactionRepository(application.DB)
+	txService := usecases.NewTransactionService(txRepo, logger)
+	txHandler := http.NewTransactionHandler(txService, logger)
 
 	//4. Wallet
 	walletRepo := repository.NewGormWalletRepository(application.DB)
 	walletService := usecases.NewWalletService(walletRepo, txRepo, logger)
 	walletHandler := http.NewWalletHandler(walletService, logger)
 
-	routes.MapRoutes(application.App, application.Config.SecretKey, userHandler, authHandler, walletHandler)
+	routes.MapRoutes(application.App, application.Config.SecretKey, userHandler, authHandler, walletHandler, txHandler)
 
 	err := application.Start()
 	if err != nil {

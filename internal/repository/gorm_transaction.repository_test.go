@@ -191,3 +191,58 @@ func TestGormTransactionRepository_Update(t *testing.T) {
 
 	
 }
+
+func TestGormTransactionRepository_Get(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+	t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+	if err != nil{
+		t.Fatalf("an error '%s' was not expected when opening a gorm database connection", err)
+	}
+    repo := NewGormTransactionRepository(gormDB)
+	t.Run("success", func(t *testing.T) {
+		refId := "refId"
+
+		rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
+			
+		mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "transactions" WHERE reference_id = $1`) + `.*`).
+			WithArgs(refId, 1).
+			WillReturnRows(rows)
+
+		result, err := repo.Get(refId)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+	t.Run("failure: transaction not found", func(t *testing.T) {
+		refId := "refId"
+			
+		mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "transactions" WHERE reference_id = $1`) + `.*`).
+			WithArgs(refId, 1).
+			WillReturnError(domain.ErrNotFoundTransaction)
+
+		result, err := repo.Get(refId)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+	t.Run("failure: internal server error", func(t *testing.T) {
+		refId := "refId"
+			
+		mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "transactions" WHERE reference_id = $1`) + `.*`).
+			WithArgs(refId, 1).
+			WillReturnError(domain.ErrInternalServerError)
+
+		result, err := repo.Get(refId)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
