@@ -103,3 +103,22 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 				Message: "Login successful",
 			})
 }
+
+func (h *AuthHandler) Logout(c fiber.Ctx) error {
+    // สร้าง Cookie ที่มีชื่อเดียวกับตอน Login
+    c.Cookie(&fiber.Cookie{
+        Name:     "jwt", // ต้องตรงกับชื่อที่ใช้ตอน Login
+        Value:    "",            // ล้างค่าให้ว่าง
+        Expires:  time.Now().Add(-time.Hour), // ตั้งเวลาให้หมดอายุไปแล้ว (ย้อนหลัง 1 ชม.)
+        HTTPOnly: true,          // ป้องกัน XSS
+        Secure:   false,          // พัฒนาบน localhost ให้เป็น false ก่อน ถ้าขึ้น Production ต้อง true
+        SameSite: "Lax",         // ป้องกัน CSRF
+        Path:     "/",           // ต้องตรงกับ Path ที่ตั้งตอน Login
+    })
+
+    return c.Status(200).JSON(&dto.Response{
+				Success: true,
+				Code: "SUCCESS",
+				Message: "Logout successful",
+			})
+}

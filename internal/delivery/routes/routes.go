@@ -19,6 +19,8 @@ func MapRoutes(app *fiber.App, secretKey string, userHandler *http.UserHandler,
     //Auth Routes
     auth := v1.Group("/auth")
     auth.Post("/login", authHandler.Login)
+    auth.Use(middleware.AuthRequired(secretKey))
+    auth.Post("/logout", authHandler.Logout)
     
     //Wallet Routes
     wallet := v1.Group("/wallet")
