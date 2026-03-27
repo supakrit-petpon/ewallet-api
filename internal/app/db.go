@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"piano/e-wallet/internal/domain"
@@ -20,8 +21,10 @@ func DBSetup(cfg Config) *gorm.DB  {
 		Colorful:      true,        // Enable color
 		},
 	)
-	
-	db, err := gorm.Open(postgres.Open(cfg.DBDSN), &gorm.Config{
+	dbdsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	 cfg.DB_HOST, cfg.DB_PORT, cfg.DB_USER, cfg.DB_PASSWORD, cfg.DB_NAME)
+
+	db, err := gorm.Open(postgres.Open(dbdsn), &gorm.Config{
 		Logger: newLogger,
 		TranslateError: true,
 	})

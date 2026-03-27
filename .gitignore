@@ -1,33 +1,23 @@
-# Binaries and executables
-bin/
+# Security
+.env
+
+# Binaries
 main
 e-wallet-api
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Secrets and configuration
-.env
-.env.local
-
-# Dependency directories
-vendor/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-ehthumbs.db
-Icon?
-Thumbs.db
-
-# IDEs
+# IDEs and Editors
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Docker
-.docker/
-# ถ้ามีโฟลเดอร์เก็บข้อมูล DB ในเครื่อง (สมมติชื่อ db_data)
-db_data/
+# OS Metadata
+.DS_Store
+Thumbs.db
 
-# Testing
-*.test
-coverage.out
+# Dependencies (Optional if you don't use vendor)
+vendor/

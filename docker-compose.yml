@@ -5,9 +5,9 @@ services:
     image: postgres:latest
     container_name: postgresE-wallet
     environment:
-      POSTGRES_DB: postgres-e-wallet
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
