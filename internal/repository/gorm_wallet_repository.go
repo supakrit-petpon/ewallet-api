@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"piano/e-wallet/internal/domain"
 	"strings"
 
@@ -58,12 +59,14 @@ func (r *GormWalletRepository) IncrementBalance(walletId uint, amount int64) (in
         Where("id = ?", walletId).
         Update("balance", gorm.Expr("balance + ?", amount))
 
-    if result.Error != nil {
-		return 0, domain.ErrInternalServerError
-	}
 	if result.RowsAffected == 0 {
 		return 0, domain.ErrNotFoundWallet
 	}
+    if result.Error != nil {
+		fmt.Println(result.Error)
+		return 0, domain.ErrInternalServerError
+	}
+	
 	
     return int64(wallet.Balance), nil
 }

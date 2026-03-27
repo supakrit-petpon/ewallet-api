@@ -19,6 +19,19 @@ func NewTransactionHandler(service usecases.TransactionUseCase, logger logger.Lo
 	return &TransactionHandler{service: service, logger: logger}
 }
 
+// TransactionHandler
+// @Summary      Get Transaction
+// @Description  Get Transaction by reference_id
+// @Tags		 transaction
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Param refId  path 	  string true "refId of transaction"
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /transaction/{refId} [get]
 func (h *TransactionHandler) GetTransaction(c fiber.Ctx) error {
 	refId := c.Params("refId")
 	if refId == "" {
@@ -56,6 +69,18 @@ func (h *TransactionHandler) GetTransaction(c fiber.Ctx) error {
 		Data: transaction,
 	})
 }
+
+// TransactionHandler
+// @Summary      Get Transaction List
+// @Description  Get Transaction List
+// @Tags		 transaction
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /transaction [get]
 func (h *TransactionHandler) GetAllTransaction(c fiber.Ctx) error {
 	val := c.Locals("userId")
     userId, ok := val.(uint)

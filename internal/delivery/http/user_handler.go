@@ -21,6 +21,18 @@ func NewUserHandler(userUserCase usecases.UserUseCase, logger logger.Logger) *Us
 	return &UserHandler{userUserCase: userUserCase, logger: logger}
 }
 
+// UserHandler
+// @Summary      User Register
+// @Description  Create user and return message
+// @Tags		 auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.UserForRequest  true "User Information"
+// @Success      201      {object}  dto.Response "Created"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      409      {object}  dto.Response "Conflict"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /register [post]
 func (h *UserHandler) Register(c fiber.Ctx) error {
 	var user domain.User
 	//Invalid Struct

@@ -4,6 +4,9 @@ import (
 	"log"
 	"piano/e-wallet/pkg/logger"
 
+	_ "piano/e-wallet/docs"
+
+	swaggo "github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 )
@@ -39,6 +42,9 @@ func (a *Application) Start() error {
 	a.App.Get("/health", func(c fiber.Ctx) error {
 		return c.SendString("OK")
 	})
+
+	a.App.Get("/swagger/*", swaggo.HandlerDefault)
+	
 	
 	log.Printf("Application starting on port %s...", a.Config.Port)
 	

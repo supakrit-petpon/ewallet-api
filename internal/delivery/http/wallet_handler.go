@@ -21,6 +21,17 @@ func NewWalletHandler(walletUseCase usecases.WalletUseCase, logger logger.Logger
 	return &WalletHandler{walletUseCase: walletUseCase, logger: logger}
 }
 
+// WalletHandler
+// @Summary      Wallet Balance
+// @Description  Get balance from wallet
+// @Tags		 wallet
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /wallet/balance [get]
 func (h *WalletHandler) Balance(c fiber.Ctx) error {
 	userId := c.Locals("userId").(uint)
 	
@@ -32,7 +43,7 @@ func (h *WalletHandler) Balance(c fiber.Ctx) error {
 
 		switch {
 			case errors.Is(err, domain.ErrNotFoundWallet):
-				status, code, message = 404, domain.ERR_AUTH_UNTHORIZED, "wallet is not exist"
+				status, code, message = 404, domain.ERR_AUTH_UNAUTHORIZED, "wallet is not exist"
 			default:
 				h.logger.Error("unexpected error in auth handler", err, "path", c.Path())
 				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"
@@ -56,6 +67,19 @@ func (h *WalletHandler) Balance(c fiber.Ctx) error {
 			})
 }
 
+// WalletHandler
+// @Summary      Wallet TopUp
+// @Description  Topup to own wallet
+// @Tags		 wallet
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.AmountRequest  true "Amount Request"
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /wallet/topup [post]
 func (h *WalletHandler) TopUp(c fiber.Ctx) error{
 	val := c.Locals("userId")
     userId, ok := val.(uint)
@@ -67,9 +91,7 @@ func (h *WalletHandler) TopUp(c fiber.Ctx) error{
 		})
     }
 
-	var req struct {
-        Amount float64 `json:"amount" validate:"required,gte=0"`
-    }
+	var req dto.AmountRequest
 	//Invalid Struct
 	if err := c.Bind().Body(&req); err != nil{
 		return c.Status(400).JSON(&dto.Response{
@@ -151,6 +173,19 @@ func (h *WalletHandler) TopUp(c fiber.Ctx) error{
     })
 }
 
+// WalletHandler
+// @Summary      Wallet Withdraw
+// @Description  Withdraw from own wallet
+// @Tags		 wallet
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.AmountRequest  true "Amount Request"
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /wallet/withdraw [post]
 func (h *WalletHandler) Withdraw(c fiber.Ctx) error {
 	val := c.Locals("userId")
     userId, ok := val.(uint)
@@ -162,9 +197,7 @@ func (h *WalletHandler) Withdraw(c fiber.Ctx) error {
 		})
     }
 
-	var req struct {
-        Amount float64 `json:"amount" validate:"required,gte=0"`
-    }
+	var req dto.AmountRequest
 
 	//Invalid Struct
 	if err := c.Bind().Body(&req); err != nil{
@@ -248,6 +281,20 @@ func (h *WalletHandler) Withdraw(c fiber.Ctx) error {
     })
 }
 
+// WalletHandler
+// @Summary      Wallet Transfer
+// @Description  Transfer to other wallet
+// @Tags		 wallet
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.TransferRequest  true "Transfer Request"
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      409      {object}  dto.Response "Conflict"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /wallet/transfer [post]
 func (h *WalletHandler) Transfer(c fiber.Ctx) error {
     val := c.Locals("userId")
     userId, ok := val.(uint)
@@ -259,10 +306,7 @@ func (h *WalletHandler) Transfer(c fiber.Ctx) error {
 		})
     }
 
-	var req struct {
-        DestinationID uint `json:"destination_id" validate:"required"`
-        Amount float64 `json:"amount" validate:"required,gte=0"`
-    }
+	var req dto.TransferRequest
 
 	if err := c.Bind().Body(&req); err != nil{
 		return c.Status(400).JSON(&dto.Response{
@@ -303,7 +347,7 @@ func (h *WalletHandler) Transfer(c fiber.Ctx) error {
         case errors.Is(err, domain.ErrConflictSourceDesId):
             status, code, message = 409, domain.ERR_CONFLITCT_SOURCE_DES_ID, "can't transfer to own wallet"
         case errors.Is(err, domain.ErrNotFoundWallet):
-            status, code, message = 404, domain.ERR_NOT_FOUND_WALLET, "wallet record not found"
+            status, code, message = 404, domain.ERR_NOT_FOUND_WALLET, "destination wallet id not found"
         case errors.Is(err, domain.ErrInsufficientBalance):
             status, code, message = 400, domain.ERR_INSUFFICIENT_BALANCE, "insufficient balance for this transaction"
         case errors.Is(err, domain.ErrConflictTransactionRefId):
@@ -349,6 +393,18 @@ func (h *WalletHandler) Transfer(c fiber.Ctx) error {
     })
 }
 
+// WalletHandler
+// @Summary      Wallet Info
+// @Description  Get own wallet id
+// @Tags		 wallet
+// @Security     JWTToken
+// @Accept       json
+// @Produce      json
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      404      {object}  dto.Response "Not Found"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /wallet/info [get]
 func (h *WalletHandler) Info(c fiber.Ctx) error {
     val := c.Locals("userId")
     userId, ok := val.(uint)

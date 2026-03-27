@@ -21,6 +21,9 @@ func (r *GormTransactionRepository) Create(tx *domain.Transaction) error {
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
 			return domain.ErrConflictTransactionRefId
 		}
+		if errors.Is(result.Error, gorm.ErrForeignKeyViolated) {
+			return domain.ErrNotFoundWallet
+		}
 		
 		return domain.ErrInternalServerError
 	}

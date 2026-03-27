@@ -23,6 +23,7 @@ func DBSetup(cfg Config) *gorm.DB  {
 	
 	db, err := gorm.Open(postgres.Open(cfg.DBDSN), &gorm.Config{
 		Logger: newLogger,
+		TranslateError: true,
 	})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)

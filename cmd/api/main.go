@@ -8,8 +8,16 @@ import (
 	"piano/e-wallet/internal/infrastructure/jwt"
 	"piano/e-wallet/internal/repository"
 	"piano/e-wallet/internal/usecases"
+
+	_ "piano/e-wallet/docs"
 )
 
+// @title E-Wallet API
+// @description This is a server for a wallet API.
+// @version 1.0
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http
 func main(){
 	application := app.NewApplication()
 	logger := application.Logger

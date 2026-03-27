@@ -21,11 +21,20 @@ func NewAuthHandler(authUserCase usecases.AuthUseCase, logger logger.Logger) *Au
 	return &AuthHandler{authUserCase: authUserCase, logger: logger}
 }
 
+
+// AuthHandler
+// @Summary      User Login
+// @Description  Authenticate user and return message
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.UserForRequest  true  "Login Credentials"
+// @Success      200      {object}  dto.Response "OK"
+// @Failure      400      {object}  dto.Response "Bad Request"
+// @Failure      401      {object}  dto.Response "Unauthorized"
+// @Failure      500      {object}  dto.Response "Internal Server Error"
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(c fiber.Ctx) error {
-	var user struct {
-        Email    string `json:"email" validate:"required,email"`
-        Password string `json:"password" validate:"required"`
-    }
+	var user dto.UserForRequest
 
 	if err := c.Bind().Body(&user); err != nil{
 		return c.Status(400).JSON(&dto.Response{
@@ -65,7 +74,7 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 
 		switch {
 			case errors.Is(err, domain.ErrAuthUnauthorized):
-				status, code, message = 401, domain.ERR_AUTH_UNTHORIZED, "Invalid email or password"
+				status, code, message = 401, domain.ERR_AUTH_UNAUTHORIZED, "Invalid email or password"
 			default:
 				h.logger.Error("unexpected error in auth handler", err, "path", c.Path())
 				status, code, message = 500, domain.ERR_INTERNAL_ERROR, "Something went wrong"

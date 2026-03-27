@@ -226,11 +226,15 @@ func (s *WalletService) Transfer(userId uint, desId uint, amount float64) (*doma
 	err = s.txRepo.Create(newTx);
 	if err != nil {
 		if errors.Is(err, domain.ErrConflictTransactionRefId){
-			s.logger.Warn("Withdraw failed: this transaction is already created", err, "component", "wallet service")
+			s.logger.Warn("Transfer failed: this transaction is already created", err, "component", "wallet service")
+			return nil, 0, err
+		}
+		if errors.Is(err, domain.ErrNotFoundWallet){
+			s.logger.Warn("Transfer failed: wallet id not found", err, "component", "wallet service")
 			return nil, 0, err
 		}
 
-		s.logger.Error("Withdraw failed: database connection lost during create user", err)
+		s.logger.Error("Transfer failed: database connection lost during transfer", err)
 		return nil, 0, err
 	}
 
@@ -253,22 +257,22 @@ func (s *WalletService) Transfer(userId uint, desId uint, amount float64) (*doma
 		_, err = txWallet.IncrementBalance(desId, int64(amount * 100))
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFoundWallet){
-				s.logger.Warn("TopUp failed: wallet record not found", err)
+				s.logger.Warn("Transfer failed: wallet record not found", err)
 				return nil, 0, err
 			}
 
-			s.logger.Error("TopUp failed: database connection lost during increment balance", err)
+			s.logger.Error("Transfer failed: database connection lost during increment balance", err)
 			return nil, 0, err
 		}
  
 		// Update transaction ด้วย status 'SUCCESS'
 		transaction, err := txTrans.Update(newTx.ID, "SUCCESS"); if err != nil {
 			if errors.Is(err, domain.ErrNotFoundTransaction){
-				s.logger.Warn("Withdraw failed: transaction record not found", err)
+				s.logger.Warn("Transfer failed: transaction record not found", err)
 				return nil, 0, err
 			}
 
-			s.logger.Error("Withdraw failed: database connection lost during updating transaction", err)
+			s.logger.Error("Transfer failed: database connection lost during updating transaction", err)
 			return nil, 0, err
 		}
 	

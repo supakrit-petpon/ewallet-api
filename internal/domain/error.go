@@ -30,7 +30,7 @@ var (
 )
 var(
     // Authentication & Authorization
-    ERR_AUTH_UNTHORIZED    = "AUTH_UNTHORIZED"
+    ERR_AUTH_UNAUTHORIZED    = "AUTH_UNTHORIZED"
     
     // Resource Not Found (ใช้คำว่า NotFound แทน RecordNotFound จะสั้นกว่า)
     ERR_NOT_FOUND_USER          = "NOT_FOUND_USER"
