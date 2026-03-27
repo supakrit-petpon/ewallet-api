@@ -1,0 +1,34 @@
+# --- Stage 1: Build ---
+FROM golang:1.23-alpine AS builder
+
+# ติดตั้งเครื่องมือที่จำเป็นสำหรับ build
+RUN apk add --no-cache git build-base
+
+WORKDIR /app
+
+# ใช้ Layer Caching ให้เป็นประโยชน์
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# แก้ไข Path ให้ตรงกับโครงสร้างโปรเจกต์ของคุณ (cmd/api)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o e-wallet-api ./cmd/api/main.go
+
+# --- Stage 2: Final (Lightweight) ---
+FROM alpine:latest
+
+# ติดตั้ง CA Certificates สำหรับการต่อ Database/External API ผ่าน HTTPS
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /root/
+
+# Copy เฉพาะไฟล์ Binary ที่ Build เสร็จแล้วมาจาก Stage แรก
+COPY --from=builder /app/e-wallet-api .
+# Copy docs สำหรับ Swagger
+COPY --from=builder /app/docs ./docs
+
+# Port ของคุณคือ 8080 (ตาม .env ที่เราคุยกันก่อนหน้า)
+EXPOSE 8080
+
+CMD ["./e-wallet-api"]
