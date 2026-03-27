@@ -1,0 +1,355 @@
+basePath: /api/v1
+definitions:
+  dto.AmountRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+    required:
+    - amount
+    type: object
+  dto.ErrorBody:
+    properties:
+      detail:
+        type: string
+      fields:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  dto.Response:
+    properties:
+      code:
+        type: string
+      data: {}
+      error:
+        $ref: '#/definitions/dto.ErrorBody'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  dto.TransferRequest:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+      destination_id:
+        type: integer
+    required:
+    - amount
+    - destination_id
+    type: object
+  dto.UserForRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a server for a wallet API.
+  title: E-Wallet API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return message
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserForRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      summary: User Login
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create user and return message
+      parameters:
+      - description: User Information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserForRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      summary: User Register
+      tags:
+      - auth
+  /transaction:
+    get:
+      consumes:
+      - application/json
+      description: Get Transaction List
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Get Transaction List
+      tags:
+      - transaction
+  /transaction/{refId}:
+    get:
+      consumes:
+      - application/json
+      description: Get Transaction by reference_id
+      parameters:
+      - description: refId of transaction
+        in: path
+        name: refId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Get Transaction
+      tags:
+      - transaction
+  /wallet/balance:
+    get:
+      consumes:
+      - application/json
+      description: Get balance from wallet
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Wallet Balance
+      tags:
+      - wallet
+  /wallet/info:
+    get:
+      consumes:
+      - application/json
+      description: Get own wallet id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Wallet Info
+      tags:
+      - wallet
+  /wallet/topup:
+    post:
+      consumes:
+      - application/json
+      description: Topup to own wallet
+      parameters:
+      - description: Amount Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AmountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Wallet TopUp
+      tags:
+      - wallet
+  /wallet/transfer:
+    post:
+      consumes:
+      - application/json
+      description: Transfer to other wallet
+      parameters:
+      - description: Transfer Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransferRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Wallet Transfer
+      tags:
+      - wallet
+  /wallet/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Withdraw from own wallet
+      parameters:
+      - description: Amount Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AmountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.Response'
+      security:
+      - JWTToken: []
+      summary: Wallet Withdraw
+      tags:
+      - wallet
+schemes:
+- http
+swagger: "2.0"
